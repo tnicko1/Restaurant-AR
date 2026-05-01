@@ -22,25 +22,25 @@ export default function App() {
           const supported = await navigator.xr.isSessionSupported('immersive-ar');
           if (supported || isIOS) {
             setStatus('Launching Advanced AR...');
-            window.location.replace('/advanced-ar.html');
+            window.location.replace('./advanced-ar.html');
           } else {
             setStatus('Launching Universal AR...');
-            window.location.replace('/mind-ar-fallback.html');
+            window.location.replace('./mind-ar-fallback.html');
           }
         } catch (e) {
           console.error(e);
           setStatus('Launching Universal AR...');
-          window.location.replace('/mind-ar-fallback.html');
+          window.location.replace('./mind-ar-fallback.html');
         }
       } else {
         // Fallback or iOS Quick Look detection
         if (isIOS) {
            // iOS supports AR Quick Look via model-viewer without WebXR explicitly exposed
            setStatus('Launching Advanced AR...');
-           window.location.replace('/advanced-ar.html');
+           window.location.replace('./advanced-ar.html');
         } else {
            setStatus('Launching Universal AR...');
-           window.location.replace('/mind-ar-fallback.html');
+           window.location.replace('./mind-ar-fallback.html');
         }
       }
     };
