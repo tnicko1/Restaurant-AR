@@ -3,31 +3,19 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Premium AR Menu</title>
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
         body { margin: 0; background: #222; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
-        model-viewer { 
-            width: 90%; 
-            height: 70vh; 
-            background-color: #fff; 
-            border-radius: 15px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-            --poster-color: transparent;
-        }
-        .ar-btn { background: #ff4757; color: white; border: none; padding: 15px 30px; border-radius: 30px; margin-top: 20px; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 4px 10px rgba(255,71,87,0.4);}
+        model-viewer { width: 90%; height: 70vh; background-color: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .ar-btn { background: #ff4757; color: white; border: none; padding: 15px 30px; border-radius: 30px; margin-top: 20px; font-weight: bold; font-size: 16px; cursor: pointer;}
         
         /* The Escape Hatch Button Style */
         .escape-hatch { margin-top: 15px; background: transparent; color: #aaa; border: 1px solid #555; padding: 10px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; text-decoration: none; }
-        
-        #error-msg { color: #ffcccb; font-size: 14px; margin-top: 10px; text-align: center; display: none; }
     </style>
 </head>
 <body>
-    <model-viewer id="mv"
-                  src="food.glb" 
+    <model-viewer src="./food.glb" 
                   ar 
-                  ar-scale="auto"
-                  bounds="tight"
                   ar-modes="webxr scene-viewer quick-look" 
                   camera-controls 
                   shadow-intensity="1" 
@@ -35,20 +23,9 @@
         <button slot="ar-button" class="ar-btn">View on Table</button>
     </model-viewer>
 
-    <div id="error-msg">Failed to load 3D model (food.glb).</div>
-
     <button class="escape-hatch" onclick="window.location.replace('mind-ar-fallback.html')">
         Camera not turning on? Click here.
     </button>
-    
-    <script>
-      const mv = document.querySelector('#mv');
-      const errorMsg = document.querySelector('#error-msg');
-      
-      mv.addEventListener('error', (event) => {
-          console.error("Model Viewer Error:", event);
-          errorMsg.style.display = 'block';
-      });
-    </script>
+
 </body>
 </html>
