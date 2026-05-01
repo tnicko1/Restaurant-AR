@@ -1,0 +1,6 @@
+{
+  "name": "Instant WebAR Menu",
+  "description": "Frictionless WebAR restaurant menu using Model-Viewer and MindAR fallback.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}

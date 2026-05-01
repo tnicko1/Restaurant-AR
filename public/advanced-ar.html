@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced AR Menu</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+  <style>
+    body { 
+      margin: 0; padding: 0; background-color: #f4f4f5; 
+      display: flex; flex-direction: column; height: 100vh; 
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    }
+    .header {
+      padding: 20px;
+      text-align: center;
+      background: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      z-index: 10;
+    }
+    h1 { margin: 0; font-size: 1.2rem; color: #111; }
+    p { margin: 4px 0 0 0; font-size: 0.9rem; color: #666; }
+    
+    model-viewer {
+      width: 100%;
+      flex-grow: 1;
+      background-color: #ffffff;
+      --poster-color: transparent;
+    }
+    
+    .ar-button {
+      background-color: #18181b;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      cursor: pointer;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ar-button:active {
+      transform: translateX(-50%) scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Today's Special</h1>
+    <p>Tap the button below to see it on your table.</p>
+  </div>
+  
+  <model-viewer 
+    src="https://modelviewer.dev/shared-assets/models/Avocado.glb" 
+    ios-src="https://modelviewer.dev/shared-assets/models/Avocado.usdz"
+    alt="A 3D model of our food" 
+    ar 
+    ar-modes="webxr scene-viewer quick-look" 
+    camera-controls 
+    auto-rotate
+    shadow-intensity="1">
+    
+    <button slot="ar-button" class="ar-button">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+        <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+        <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+        <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+        <rect x="7" y="7" width="10" height="10" rx="2"></rect>
+      </svg>
+      Place on Table
+    </button>
+  </model-viewer>
+</body>
+</html>
