@@ -16,10 +16,11 @@ export default function App() {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
       
       // Feature detect WebXR
-      if (navigator.xr && navigator.xr.isSessionSupported) {
+      const nav = navigator as any;
+      if (nav.xr && nav.xr.isSessionSupported) {
         setStatus('Checking AR capabilities...');
         try {
-          const supported = await navigator.xr.isSessionSupported('immersive-ar');
+          const supported = await nav.xr.isSessionSupported('immersive-ar');
           if (supported || isIOS) {
             setStatus('Launching Advanced AR...');
             window.location.replace('./advanced-ar.html');
