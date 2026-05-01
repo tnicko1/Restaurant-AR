@@ -1,81 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Advanced AR Menu</title>
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
-  <style>
-    body { 
-      margin: 0; padding: 0; background-color: #18181b; 
-      display: flex; flex-direction: column; height: 100vh; 
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-    }
-    .header {
-      padding: 20px;
-      text-align: center;
-      background: #09090b;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      z-index: 10;
-    }
-    h1 { margin: 0; font-size: 1.2rem; color: #fff; }
-    p { margin: 4px 0 0 0; font-size: 0.9rem; color: #a1a1aa; }
-    
-    model-viewer {
-      width: 100%;
-      flex-grow: 1;
-      background-color: #18181b;
-      --poster-color: transparent;
-    }
-    
-    .ar-button {
-      background-color: #18181b;
-      color: white;
-      border: none;
-      border-radius: 30px;
-      padding: 16px 32px;
-      font-size: 16px;
-      font-weight: 600;
-      position: absolute;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      cursor: pointer;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .ar-button:active {
-      transform: translateX(-50%) scale(0.98);
-    }
-  </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Premium AR Menu</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <style>
+        body { margin: 0; background: #222; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+        model-viewer { width: 90%; height: 70vh; background-color: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .ar-btn { background: #ff4757; color: white; border: none; padding: 15px 30px; border-radius: 30px; margin-top: 20px; font-weight: bold; font-size: 16px; cursor: pointer;}
+        
+        /* The Escape Hatch Button Style */
+        .escape-hatch { margin-top: 15px; background: transparent; color: #aaa; border: 1px solid #555; padding: 10px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; text-decoration: none; }
+    </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Today's Special</h1>
-    <p>Tap the button below to see it on your table.</p>
-  </div>
-  
-  <model-viewer 
-    src="./models/food.glb" 
-    alt="A 3D model of our food" 
-    ar 
-    ar-modes="webxr scene-viewer quick-look" 
-    camera-controls 
-    auto-rotate
-    shadow-intensity="1">
-    
-    <button slot="ar-button" class="ar-button">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
-        <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
-        <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
-        <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
-        <rect x="7" y="7" width="10" height="10" rx="2"></rect>
-      </svg>
-      Place on Table
+    <model-viewer src="./food.glb" 
+                  ar 
+                  ar-modes="webxr scene-viewer quick-look" 
+                  camera-controls 
+                  shadow-intensity="1" 
+                  auto-rotate>
+        <button slot="ar-button" class="ar-btn">View on Table</button>
+    </model-viewer>
+
+    <button class="escape-hatch" onclick="window.location.replace('mind-ar-fallback.html')">
+        Camera not turning on? Click here.
     </button>
-  </model-viewer>
+
 </body>
 </html>

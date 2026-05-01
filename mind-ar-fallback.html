@@ -1,77 +1,39 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Universal AR Menu (Fallback)</title>
-    <!-- We need to ensure models are compatible with this older version of A-Frame MindAR uses -->
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <title>Standard AR Menu</title>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) { registration.unregister(); }
+        });
+      }
+    </script>
+
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <style>
-      body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, sans-serif; }
-      #ui-container {
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        pointer-events: none;
-        z-index: 100;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-      }
-      .header {
-        background: rgba(0,0,0,0.6);
-        color: white;
-        text-align: center;
-        padding: 16px;
-      }
-      .header h1 { margin: 0; font-size: 1.2rem; }
-      .header p { margin: 4px 0 0 0; font-size: 0.9rem; opacity: 0.8; }
+</head>
+<body>
+    <a-scene mindar-image="imageTargetSrc: ./menu-marker.mind; autoStart: true; uiLoading: no; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 30;" 
+             color-space="sRGB" 
+             renderer="colorManagement: true, physicallyCorrectLights"
+             vr-mode-ui="enabled: false" 
+             device-orientation-permission-ui="enabled: false">
       
-      #scanning-prompt {
-        background: white; color: black; padding: 12px 24px; border-radius: 30px;
-        margin-bottom: 40px; align-self: center; font-weight: 600;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        animation: pulse 2s infinite;
-      }
-      @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="ui-container">
-      <div class="header">
-        <h1>Scan Menu Marker</h1>
-        <p>Point your camera at the physical marker on your table</p>
-      </div>
-      <div id="scanning-prompt">Waiting for marker...</div>
-    </div>
-    
-    <!-- MindAR Image Tracking Scene -->
-    <a-scene mindar-image="imageTargetSrc: ./targets/menu-marker.mind; autoStart: true; uiScanning: no;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-assets>
-        <a-asset-item id="foodModel" src="./models/food.glb"></a-asset-item>
+        <a-asset-item id="food-model" src="./food.glb"></a-asset-item>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target">
-        <!-- Scale might need adjustment depending on your physical marker size -->
-        <a-gltf-model rotation="0 0 0" position="0 0 0.1" scale="10 10 10" src="#foodModel" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear;"></a-gltf-model>
+      <a-entity mindar-image-target="targetIndex: 0">
+           <a-entity gltf-model="#food-model" 
+                     position="0 0 0" 
+                     rotation="90 0 0" 
+                     scale="1 1 1">
+           </a-entity>
       </a-entity>
     </a-scene>
-
-    <script>
-      const target = document.querySelector('#target');
-      const prompt = document.querySelector('#scanning-prompt');
-      
-      target.addEventListener("targetFound", event => {
-        prompt.style.display = 'none';
-      });
-      target.addEventListener("targetLost", event => {
-        prompt.style.display = 'block';
-      });
-    </script>
-  </body>
+</body>
 </html>
