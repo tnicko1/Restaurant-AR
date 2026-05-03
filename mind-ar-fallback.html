@@ -2,25 +2,71 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Standard AR Menu</title>
+    <title>AR Menu</title>
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) { registration.unregister(); }
+          for (let r of registrations) { r.unregister(); }
         });
       }
     </script>
 
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; }
+
+        #scan-hint {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-family: sans-serif;
+            font-size: 15px;
+            padding: 12px 22px;
+            border-radius: 24px;
+            pointer-events: none;
+            transition: opacity 0.4s;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        #scan-hint.hidden { opacity: 0; }
+
+        #fallback-btn {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            background: rgba(0,0,0,0.5);
+            color: #ccc;
+            border: 1px solid rgba(255,255,255,0.25);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            z-index: 10;
+        }
+    </style>
 </head>
 <body>
-    <a-scene mindar-image="imageTargetSrc: ./menu-marker.mind; autoStart: true; uiLoading: no; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 30;" 
-             color-space="sRGB" 
-             renderer="colorManagement: true, physicallyCorrectLights"
-             vr-mode-ui="enabled: false" 
+    <div id="scan-hint">Point camera at the menu marker</div>
+    <button id="fallback-btn" onclick="window.location.replace('advanced-ar.html')">Try Premium AR</button>
+
+    <a-scene mindar-image="imageTargetSrc: ./menu-marker.mind;
+                            autoStart: true;
+                            uiLoading: no;
+                            filterMinCF: 0.001;
+                            filterBeta: 100;
+                            warmupTolerance: 5;
+                            missTolerance: 5;"
+             color-space="sRGB"
+             renderer="colorManagement: true; physicallyCorrectLights: true"
+             vr-mode-ui="enabled: false"
              device-orientation-permission-ui="enabled: false">
-      
+
       <a-assets>
         <a-asset-item id="food-model" src="./food.glb"></a-asset-item>
       </a-assets>
@@ -28,12 +74,24 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-           <a-entity gltf-model="#food-model" 
-                     position="0 0 0" 
-                     rotation="90 0 0" 
-                     scale="1 1 1">
-           </a-entity>
+        <a-entity gltf-model="#food-model"
+                  position="0 0 0.1"
+                  rotation="90 0 0"
+                  scale="1 1 1">
+        </a-entity>
       </a-entity>
     </a-scene>
+
+    <script>
+        const hint = document.getElementById('scan-hint');
+        const scene = document.querySelector('a-scene');
+
+        scene.addEventListener('targetFound', () => {
+            hint.classList.add('hidden');
+        });
+        scene.addEventListener('targetLost', () => {
+            hint.classList.remove('hidden');
+        });
+    </script>
 </body>
 </html>
