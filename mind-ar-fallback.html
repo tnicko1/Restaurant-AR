@@ -59,9 +59,9 @@
                             autoStart: true;
                             uiLoading: no;
                             filterMinCF: 0.001;
-                            filterBeta: 100;
-                            warmupTolerance: 5;
-                            missTolerance: 5;"
+                            filterBeta: 0.01;
+                            warmupTolerance: 3;
+                            missTolerance: 20;"
              color-space="sRGB"
              renderer="colorManagement: true; physicallyCorrectLights: true"
              vr-mode-ui="enabled: false"
@@ -77,7 +77,7 @@
         <a-entity gltf-model="#food-model"
                   position="0 0 0.1"
                   rotation="90 0 0"
-                  scale="1 1 1">
+                  scale="0.3 0.3 0.3">
         </a-entity>
       </a-entity>
     </a-scene>
