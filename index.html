@@ -20,38 +20,7 @@
     <h2>Loading 3D Menu...</h2>
 
     <script>
-        async function routeUser() {
-            const ua = navigator.userAgent;
-
-            // iOS: iPhone/iPod or modern iPad (reports as MacIntel + touch)
-            const isIOS = /iPhone|iPad|iPod/i.test(ua) ||
-                          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-            if (isIOS) {
-                window.location.replace("advanced-ar.html");
-                return;
-            }
-
-            // Android / other: probe WebXR immersive-ar support.
-            // Phones with ARCore hardware that are NOT on Google's whitelist will
-            // return false here and correctly fall through to the MindAR fallback.
-            if (navigator.xr) {
-                try {
-                    const supported = await Promise.race([
-                        navigator.xr.isSessionSupported('immersive-ar'),
-                        new Promise(resolve => setTimeout(() => resolve(false), 2000))
-                    ]);
-                    if (supported) {
-                        window.location.replace("advanced-ar.html");
-                        return;
-                    }
-                } catch (e) {}
-            }
-
-            window.location.replace("mind-ar-fallback.html");
-        }
-
-        routeUser();
+        window.location.replace("advanced-ar.html");
     </script>
 </body>
 </html>

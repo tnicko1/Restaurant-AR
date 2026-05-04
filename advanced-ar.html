@@ -27,5 +27,14 @@
         Camera not turning on? Click here.
     </button>
 
+    <script>
+        const viewer = document.querySelector('model-viewer');
+        viewer.addEventListener('ar-status', (e) => {
+            if (e.detail.status === 'failed') {
+                window.location.replace('mind-ar-fallback.html');
+            }
+        });
+    </script>
+
 </body>
 </html>
