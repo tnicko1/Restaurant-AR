@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Classic Burger",
+    "description": "Angus beef, cheddar, lettuce & tomato",
+    "price": "$12.99",
+    "model": "food.glb"
+  },
+  {
+    "name": "Margherita Pizza",
+    "description": "San Marzano tomatoes, mozzarella & basil",
+    "price": "$14.99",
+    "model": "food.glb"
+  },
+  {
+    "name": "Caesar Salad",
+    "description": "Romaine, croutons, parmesan, house dressing",
+    "price": "$9.99",
+    "model": "food.glb"
+  },
+  {
+    "name": "BBQ Ribs",
+    "description": "Slow-cooked pork ribs with smoky BBQ sauce",
+    "price": "$24.99",
+    "model": "food.glb"
+  },
+  {
+    "name": "Chicken Tacos",
+    "description": "Grilled chicken, salsa, avocado & lime",
+    "price": "$11.99",
+    "model": "food.glb"
+  }
+]

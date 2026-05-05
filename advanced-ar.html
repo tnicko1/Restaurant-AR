@@ -25,6 +25,11 @@
         Camera not turning on? Click here.
     </button>
 
+    <button class="escape-hatch" style="bottom: 48px; right: 12px; color: #ff4757; border-color: #ff4757;"
+            onclick="window.location.href='ar-webxr.html'">
+        &#9883; Try 3-Model WebXR (beta)
+    </button>
+
     <script>
         const viewer = document.querySelector('model-viewer');
         viewer.addEventListener('ar-status', (e) => {
