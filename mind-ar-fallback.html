@@ -84,7 +84,7 @@
 </head>
 <body>
     <div id="scan-hint">Point camera at the menu marker</div>
-    <div id="item-indicator">Menu Item 1 &middot; 1 / 20</div>
+    <div id="item-indicator">–</div>
     <div id="swipe-hint">&#8592; swipe to browse &#8594;</div>
     <button id="fallback-btn" onclick="window.location.replace('advanced-ar.html')">Try Premium AR</button>
 
@@ -100,68 +100,83 @@
              vr-mode-ui="enabled: false"
              device-orientation-permission-ui="enabled: false">
 
-      <a-assets>
-        <a-asset-item id="food-model" src="./food.glb"></a-asset-item>
-      </a-assets>
-
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
 
         <!-- slot-0: initial role = left -->
         <a-entity id="slot-0" position="-0.8 0 0" scale="0.25 0.25 0.25">
-          <a-entity gltf-model="#food-model" rotation="90 0 0"></a-entity>
+          <a-entity class="model-entity" rotation="90 0 0"></a-entity>
         </a-entity>
 
         <!-- slot-1: initial role = center -->
         <a-entity id="slot-1" position="0 0 0.1" scale="0.3 0.3 0.3">
-          <a-entity gltf-model="#food-model" rotation="90 0 0"></a-entity>
+          <a-entity class="model-entity" rotation="90 0 0"></a-entity>
         </a-entity>
 
         <!-- slot-2: initial role = right -->
         <a-entity id="slot-2" position="0.8 0 0" scale="0.25 0.25 0.25">
-          <a-entity gltf-model="#food-model" rotation="90 0 0"></a-entity>
+          <a-entity class="model-entity" rotation="90 0 0"></a-entity>
         </a-entity>
 
-        <!-- slot-3: initial role = hidden (far right, off-screen) -->
+        <!-- slot-3: initial role = hidden (far right) -->
         <a-entity id="slot-3" position="2.2 0 0" scale="0.25 0.25 0.25">
-          <a-entity gltf-model="#food-model" rotation="90 0 0"></a-entity>
+          <a-entity class="model-entity" rotation="90 0 0"></a-entity>
+        </a-entity>
+
+        <!-- Name label — floats above the model, faces camera via look-at -->
+        <a-entity id="label-name-wrap" position="0 0 0.42" visible="false">
+          <a-entity look-at="[camera]">
+            <a-text id="label-name" value="" color="#FFFFFF" align="center"
+                    width="1.5" wrapCount="18" rotation="0 180 0" negate="false"></a-text>
+          </a-entity>
+        </a-entity>
+
+        <!-- Info label — sits at model base level, faces camera -->
+        <a-entity id="label-info-wrap" position="0 0 0.05" visible="false">
+          <a-entity look-at="[camera]">
+            <a-text id="label-info" value="" color="#FFD700" align="center"
+                    width="1.8" wrapCount="28" rotation="0 180 0" negate="false"></a-text>
+          </a-entity>
         </a-entity>
 
       </a-entity>
     </a-scene>
 
     <script>
-        // ── Menu items (20 placeholders, all using food.glb) ─────────────────
-        const MENU = Array.from({ length: 20 }, (_, i) => ({
-            name: `Menu Item ${i + 1}`,
-            src: './food.glb'
-        }));
-        const N   = MENU.length;
+        // ── Menu data ─────────────────────────────────────────────────────────
+        let MENU = [];
+        let N    = 0;
         const mod = i => ((i % N) + N) % N;
 
-        // ── Per-role config: position, scale, opacity ─────────────────────────
+        // ── Per-role config ───────────────────────────────────────────────────
         const CFG = {
             farLeft:  { pos: [-2.2, 0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0    },
             left:     { pos: [-0.8, 0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0.35 },
-            center:   { pos: [0,    0, 0.1],scale: [0.3,  0.3,  0.3 ], opacity: 1.0  },
+            center:   { pos: [0,    0, 0.1], scale: [0.3,  0.3,  0.3 ], opacity: 1.0  },
             right:    { pos: [0.8,  0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0.35 },
             farRight: { pos: [2.2,  0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0    },
         };
 
         // ── Carousel state ────────────────────────────────────────────────────
-        // slotOf[role] = physical slot index 0–3
-        let slotOf = { left: 0, center: 1, right: 2, hidden: 3 };
-        // menuOf[slotIdx] = which MENU index that slot currently displays
-        let menuOf = [mod(-1), 0, 1, 2];
-        let hiddenSide = 'farRight'; // which side the hidden slot is parked on
+        let slotOf            = { left: 0, center: 1, right: 2, hidden: 3 };
+        let menuOf            = [0, 0, 0, 0];
+        let hiddenSide        = 'farRight';
         let currentCenterMenu = 0;
-        let isAnimating = false;
-        const DUR = 350; // animation duration ms
+        let isAnimating       = false;
+        const DUR             = 350;
 
         // ── DOM refs ──────────────────────────────────────────────────────────
-        const slotEls  = [0,1,2,3].map(i => document.getElementById(`slot-${i}`));
-        const modelEls = slotEls.map(el => el.querySelector('[gltf-model]'));
+        const slotEls       = [0,1,2,3].map(i => document.getElementById(`slot-${i}`));
+        const modelEls      = slotEls.map(el => el.querySelector('.model-entity'));
+        const labelNameWrap = document.getElementById('label-name-wrap');
+        const labelInfoWrap = document.getElementById('label-info-wrap');
+        const labelName     = document.getElementById('label-name');
+        const labelInfo     = document.getElementById('label-info');
+        const indicator     = document.getElementById('item-indicator');
+        const swipeHint     = document.getElementById('swipe-hint');
+        const hint          = document.getElementById('scan-hint');
+        const scene         = document.querySelector('a-scene');
 
         // ── Opacity helpers ───────────────────────────────────────────────────
         function setMeshOpacity(modelEl, opacity) {
@@ -184,7 +199,7 @@
             const t0 = performance.now();
             (function tick(now) {
                 const t = Math.min((now - t0) / dur, 1);
-                const e = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t; // easeInOutQuad
+                const e = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
                 setMeshOpacity(el, from + (to - from) * e);
                 if (t < 1) requestAnimationFrame(tick);
             })(t0);
@@ -206,46 +221,69 @@
             const [x, y, z]    = CFG[role].pos;
             const [sx, sy, sz] = CFG[role].scale;
             el.setAttribute('animation__pos', {
-                property: 'position',
-                to: `${x} ${y} ${z}`,
-                dur, easing: 'easeInOutQuad'
+                property: 'position', to: `${x} ${y} ${z}`, dur, easing: 'easeInOutQuad'
             });
             el.setAttribute('animation__scale', {
-                property: 'scale',
-                to: `${sx} ${sy} ${sz}`,
-                dur, easing: 'easeInOutQuad'
+                property: 'scale', to: `${sx} ${sy} ${sz}`, dur, easing: 'easeInOutQuad'
             });
         }
 
-        // ── Set initial opacities when each model loads ───────────────────────
-        const initOpacity = [CFG.left.opacity, CFG.center.opacity, CFG.right.opacity, 0];
-        modelEls.forEach((el, i) => {
-            el.addEventListener('model-loaded', () => setMeshOpacity(el, initOpacity[i]));
+        // ── Model loading ─────────────────────────────────────────────────────
+        // model-loaded listener reads data-opacity and applies it
+        modelEls.forEach(el => {
+            el.addEventListener('model-loaded', () => {
+                const opacity = parseFloat(el.dataset.opacity ?? '0');
+                setMeshOpacity(el, opacity);
+            });
         });
+
+        function setSlotModel(slotIdx, menuIdx) {
+            const el   = modelEls[slotIdx];
+            const path = (MENU[menuIdx] && MENU[menuIdx].model) || 'food.glb';
+            el.dataset.opacity = '0';
+            el.setAttribute('gltf-model', `url(${path})`);
+            setMeshOpacity(el, 0); // immediate apply for cached models
+        }
+
+        function initSlots() {
+            menuOf = [mod(-1), 0, 1, 2];
+            const initOpacities = [CFG.left.opacity, CFG.center.opacity, CFG.right.opacity, 0];
+            modelEls.forEach((el, i) => {
+                el.dataset.opacity = String(initOpacities[i]);
+                const path = (MENU[menuOf[i]] && MENU[menuOf[i]].model) || 'food.glb';
+                el.setAttribute('gltf-model', `url(${path})`);
+            });
+            updateLabel();
+        }
+
+        // ── Label text ────────────────────────────────────────────────────────
+        function updateLabel() {
+            const item = MENU[currentCenterMenu];
+            if (!item) return;
+            indicator.textContent = `${item.name} · ${currentCenterMenu + 1} / ${N}`;
+            labelName.setAttribute('value', item.name);
+            labelInfo.setAttribute('value', `${item.price} · ${item.description}`);
+        }
 
         // ── Navigation ────────────────────────────────────────────────────────
         function goNext() {
             if (isAnimating) return;
             isAnimating = true;
             const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
-
-            // Hidden slot must enter from the right; teleport it if it's on the wrong side
             if (hiddenSide === 'farLeft') snapSlot(hIdx, 'farRight');
             menuOf[hIdx] = mod(menuOf[rIdx] + 1);
+            setSlotModel(hIdx, menuOf[hIdx]);
 
-            animateSlot(lIdx, 'farLeft', DUR);
-            animateSlot(cIdx, 'left',    DUR);
-            animateSlot(rIdx, 'center',  DUR);
-            animateSlot(hIdx, 'right',   DUR);
-
+            animateSlot(lIdx, 'farLeft', DUR); animateSlot(cIdx, 'left',   DUR);
+            animateSlot(rIdx, 'center',  DUR); animateSlot(hIdx, 'right',  DUR);
             animateOpacity(lIdx, CFG.left.opacity,   0,                   DUR);
             animateOpacity(cIdx, CFG.center.opacity, CFG.left.opacity,    DUR);
             animateOpacity(rIdx, CFG.right.opacity,  CFG.center.opacity,  DUR);
             animateOpacity(hIdx, 0,                  CFG.right.opacity,   DUR);
 
             setTimeout(() => {
-                slotOf      = { left: cIdx, center: rIdx, right: hIdx, hidden: lIdx };
-                hiddenSide  = 'farLeft';
+                slotOf            = { left: cIdx, center: rIdx, right: hIdx, hidden: lIdx };
+                hiddenSide        = 'farLeft';
                 currentCenterMenu = mod(currentCenterMenu + 1);
                 updateLabel();
                 isAnimating = false;
@@ -256,51 +294,40 @@
             if (isAnimating) return;
             isAnimating = true;
             const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
-
-            // Hidden slot must enter from the left; teleport it if it's on the wrong side
             if (hiddenSide === 'farRight') snapSlot(hIdx, 'farLeft');
             menuOf[hIdx] = mod(menuOf[lIdx] - 1);
+            setSlotModel(hIdx, menuOf[hIdx]);
 
-            animateSlot(rIdx, 'farRight', DUR);
-            animateSlot(cIdx, 'right',    DUR);
-            animateSlot(lIdx, 'center',   DUR);
-            animateSlot(hIdx, 'left',     DUR);
-
+            animateSlot(rIdx, 'farRight', DUR); animateSlot(cIdx, 'right',  DUR);
+            animateSlot(lIdx, 'center',   DUR); animateSlot(hIdx, 'left',   DUR);
             animateOpacity(rIdx, CFG.right.opacity,  0,                   DUR);
             animateOpacity(cIdx, CFG.center.opacity, CFG.right.opacity,   DUR);
             animateOpacity(lIdx, CFG.left.opacity,   CFG.center.opacity,  DUR);
             animateOpacity(hIdx, 0,                  CFG.left.opacity,    DUR);
 
             setTimeout(() => {
-                slotOf      = { left: hIdx, center: lIdx, right: cIdx, hidden: rIdx };
-                hiddenSide  = 'farRight';
+                slotOf            = { left: hIdx, center: lIdx, right: cIdx, hidden: rIdx };
+                hiddenSide        = 'farRight';
                 currentCenterMenu = mod(currentCenterMenu - 1);
                 updateLabel();
                 isAnimating = false;
             }, DUR + 10);
         }
 
-        // ── Label ─────────────────────────────────────────────────────────────
-        const indicator = document.getElementById('item-indicator');
-        const swipeHint = document.getElementById('swipe-hint');
-
-        function updateLabel() {
-            indicator.textContent = `${MENU[currentCenterMenu].name} · ${currentCenterMenu + 1} / ${N}`;
-        }
-
-        // ── Show/hide overlay on target found/lost ────────────────────────────
-        const hint  = document.getElementById('scan-hint');
-        const scene = document.querySelector('a-scene');
-
+        // ── Target found / lost ───────────────────────────────────────────────
         scene.addEventListener('targetFound', () => {
             hint.classList.add('hidden');
             indicator.classList.add('visible');
             swipeHint.classList.add('visible');
+            labelNameWrap.setAttribute('visible', 'true');
+            labelInfoWrap.setAttribute('visible', 'true');
         });
         scene.addEventListener('targetLost', () => {
             hint.classList.remove('hidden');
             indicator.classList.remove('visible');
             swipeHint.classList.remove('visible');
+            labelNameWrap.setAttribute('visible', 'false');
+            labelInfoWrap.setAttribute('visible', 'false');
         });
 
         // ── Swipe detection ───────────────────────────────────────────────────
@@ -318,6 +345,22 @@
                 dx < 0 ? goNext() : goPrev();
             }
         }, { passive: true });
+
+        // ── Boot: fetch menu.json then init slots ─────────────────────────────
+        fetch('./foods/menu.json')
+            .then(r => r.json())
+            .catch(() => null)
+            .then(data => {
+                MENU = data || [
+                    { name: 'Classic Burger',   description: 'Angus beef, cheddar, lettuce & tomato',      price: '$12.99', model: 'food.glb' },
+                    { name: 'Margherita Pizza', description: 'San Marzano tomatoes, mozzarella & basil',    price: '$14.99', model: 'food.glb' },
+                    { name: 'Caesar Salad',     description: 'Romaine, croutons, parmesan, house dressing', price: '$9.99',  model: 'food.glb' },
+                    { name: 'BBQ Ribs',         description: 'Slow-cooked pork ribs with smoky BBQ sauce',  price: '$24.99', model: 'food.glb' },
+                    { name: 'Chicken Tacos',    description: 'Grilled chicken, salsa, avocado & lime',      price: '$11.99', model: 'food.glb' },
+                ];
+                N = MENU.length;
+                initSlots();
+            });
     </script>
 </body>
 </html>
