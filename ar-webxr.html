@@ -3,387 +3,217 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>WebXR AR Menu</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #111; font-family: sans-serif; overflow: hidden; }
 
-        /* ── Pre-AR landing screen ─────────────────────────────────────── */
+        /* ── Landing screen ──────────────────────────────────────────────── */
         #pre-ar {
-            position: fixed;
-            inset: 0;
-            z-index: 100;
-            background: #111;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 18px;
-            padding: 32px;
-            text-align: center;
-            color: white;
+            position: fixed; inset: 0; z-index: 20;
+            background: #111; color: white;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 20px; padding: 32px; text-align: center;
         }
+        #pre-ar h2 { font-size: 22px; }
+        #pre-ar p  { font-size: 14px; color: #999; max-width: 300px; line-height: 1.6; }
+        #status    { font-size: 13px; color: #666; min-height: 20px; }
 
-        #pre-ar h1 { font-size: 22px; font-weight: 600; }
-        #pre-ar p  { font-size: 14px; color: #aaa; line-height: 1.6; max-width: 300px; }
-
-        #status-msg {
-            font-size: 13px;
-            color: #888;
-            min-height: 18px;
+        #btn-start {
+            display: none; background: #ff4757; color: white;
+            border: none; padding: 16px 36px; border-radius: 30px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
         }
-
-        #btn-start-ar {
-            display: none;
-            background: #ff4757;
-            color: white;
-            border: none;
-            padding: 16px 36px;
-            border-radius: 30px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
+        #btn-unsupported {
+            display: none; background: transparent; color: #888;
+            border: 1px solid #555; padding: 12px 24px;
+            border-radius: 20px; font-size: 14px; cursor: pointer;
         }
-
-        #btn-not-supported {
-            display: none;
-            background: transparent;
-            color: #aaa;
-            border: 1px solid #444;
-            padding: 12px 24px;
-            border-radius: 20px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
         .back-link {
-            position: fixed;
-            top: 18px;
-            left: 18px;
-            color: #666;
-            font-size: 13px;
-            text-decoration: none;
-            z-index: 101;
+            position: fixed; top: 18px; left: 18px; z-index: 25;
+            color: #666; font-size: 13px; text-decoration: none;
         }
 
-        /* ── DOM overlay — shown during AR session ─────────────────────── */
+        /* ── AR overlay (DOM overlay during session) ─────────────────────── */
         #ar-overlay {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 50;
+            position: fixed; inset: 0; z-index: 10;
+            pointer-events: none; display: none;
         }
-
         #place-hint {
-            position: absolute;
-            bottom: 100px;
-            left: 50%;
+            position: absolute; bottom: 110px; left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.65);
-            color: white;
-            font-size: 15px;
-            padding: 12px 22px;
-            border-radius: 24px;
-            white-space: nowrap;
+            background: rgba(0,0,0,0.65); color: white;
+            font-size: 15px; padding: 12px 22px;
+            border-radius: 24px; white-space: nowrap;
         }
-
-        #item-indicator {
-            display: none;
-            position: absolute;
-            top: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.65);
-            color: white;
-            font-size: 14px;
-            padding: 8px 18px;
-            border-radius: 20px;
-            white-space: nowrap;
+        #item-label {
+            display: none; position: absolute;
+            top: 24px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.65); color: white;
+            font-size: 14px; padding: 8px 18px;
+            border-radius: 20px; white-space: nowrap;
         }
-
         #swipe-hint {
-            display: none;
-            position: absolute;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255,255,255,0.65);
-            font-size: 13px;
-            white-space: nowrap;
+            display: none; position: absolute;
+            bottom: 70px; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.6); font-size: 13px; white-space: nowrap;
         }
-
-        #btn-exit-ar {
-            display: none;
+        #btn-exit {
             pointer-events: all;
-            position: absolute;
-            top: 24px;
-            right: 18px;
-            background: rgba(0,0,0,0.55);
-            color: #ccc;
+            position: absolute; top: 18px; right: 18px;
+            background: rgba(0,0,0,0.55); color: #ccc;
             border: 1px solid rgba(255,255,255,0.25);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
+            padding: 8px 16px; border-radius: 20px;
+            font-size: 13px; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <!-- Back link (always visible) -->
     <a class="back-link" href="advanced-ar.html">&#8592; Back</a>
 
-    <!-- Landing screen (hidden once AR starts) -->
     <div id="pre-ar">
-        <h1>3-Model AR Experience</h1>
-        <p>Place the menu in your space. Point your camera at a flat surface, then tap to place three dishes side by side.</p>
-        <div id="status-msg">Checking device support…</div>
-        <button id="btn-start-ar">Start AR</button>
-        <button id="btn-not-supported" onclick="history.back()">
-            Not supported — go back
-        </button>
+        <h2>3-Model WebXR AR</h2>
+        <p>Point your camera at a flat surface and tap to place three menu items side by side. Swipe left or right to browse.</p>
+        <div id="status">Checking device support…</div>
+        <button id="btn-start">Start AR</button>
+        <button id="btn-unsupported" onclick="history.back()">Not supported — go back</button>
     </div>
 
-    <!-- DOM overlay shown inside the AR session -->
     <div id="ar-overlay">
         <div id="place-hint">Point at a flat surface, then tap to place</div>
-        <div id="item-indicator">Menu Item 1 · 1 / 20</div>
+        <div id="item-label">Menu Item 1 · 1 / 20</div>
         <div id="swipe-hint">&#8592; swipe to browse &#8594;</div>
-        <button id="btn-exit-ar">Exit AR</button>
+        <button id="btn-exit">Exit AR</button>
     </div>
 
-    <!-- A-Frame scene -->
-    <a-scene id="ar-scene"
-             webxr="requiredFeatures: hit-test; optionalFeatures: dom-overlay; domOverlay: #ar-overlay"
-             renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true"
-             vr-mode-ui="enabled: false"
-             device-orientation-permission-ui="enabled: false">
+    <script type="module">
+        // esm.sh resolves all internal Three.js imports automatically — no import map needed
+        import * as THREE    from 'https://esm.sh/three@0.155.0';
+        import { GLTFLoader } from 'https://esm.sh/three@0.155.0/examples/jsm/loaders/GLTFLoader';
 
-        <a-assets>
-            <a-asset-item id="food-model" src="./food.glb"></a-asset-item>
-        </a-assets>
+        // ── Renderer ──────────────────────────────────────────────────────────
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.xr.enabled = true;
+        renderer.xr.setReferenceSpaceType('local');
 
-        <!-- Reticle: follows detected surface before placement -->
-        <a-ring id="reticle"
-                radius-inner="0.04" radius-outer="0.07"
-                rotation="-90 0 0"
-                material="color: white; shader: flat; opacity: 0.8"
-                visible="false">
-        </a-ring>
+        // Position canvas behind UI layers
+        Object.assign(renderer.domElement.style, {
+            position: 'fixed', top: '0', left: '0', zIndex: '1'
+        });
+        document.body.appendChild(renderer.domElement);
 
-        <!-- Carousel root — positioned at tap point, hidden until placed -->
-        <a-entity id="ar-root" visible="false">
+        // ── Scene & lights ────────────────────────────────────────────────────
+        const scene  = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            <!-- slot-0: initial role = left -->
-            <a-entity id="slot-0" position="-0.38 0 0" scale="0.12 0.12 0.12">
-                <a-entity gltf-model="#food-model"></a-entity>
-            </a-entity>
+        scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(0.5, 1, 0.25);
+        scene.add(dirLight);
 
-            <!-- slot-1: initial role = center -->
-            <a-entity id="slot-1" position="0 0 0" scale="0.15 0.15 0.15">
-                <a-entity gltf-model="#food-model"></a-entity>
-            </a-entity>
+        // ── Reticle (surface indicator ring) ──────────────────────────────────
+        const reticle = new THREE.Mesh(
+            new THREE.RingGeometry(0.04, 0.07, 32),
+            new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+        );
+        reticle.rotation.x = -Math.PI / 2;
+        reticle.matrixAutoUpdate = false;
+        reticle.visible = false;
+        scene.add(reticle);
 
-            <!-- slot-2: initial role = right -->
-            <a-entity id="slot-2" position="0.38 0 0" scale="0.12 0.12 0.12">
-                <a-entity gltf-model="#food-model"></a-entity>
-            </a-entity>
+        // ── Carousel ──────────────────────────────────────────────────────────
+        const carouselRoot = new THREE.Group();
+        scene.add(carouselRoot);
+        carouselRoot.visible = false;
 
-            <!-- slot-3: initial role = hidden (far right) -->
-            <a-entity id="slot-3" position="0.95 0 0" scale="0.12 0.12 0.12">
-                <a-entity gltf-model="#food-model"></a-entity>
-            </a-entity>
-
-        </a-entity>
-
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-    </a-scene>
-
-    <script>
-        // ── WebXR support check ───────────────────────────────────────────────
-        const statusMsg      = document.getElementById('status-msg');
-        const btnStartAR     = document.getElementById('btn-start-ar');
-        const btnNotSupported = document.getElementById('btn-not-supported');
-
-        (async () => {
-            if (!navigator.xr) {
-                statusMsg.textContent = 'WebXR not available on this browser.';
-                btnNotSupported.style.display = 'block';
-                return;
-            }
-            const supported = await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
-            if (supported) {
-                statusMsg.textContent = 'Ready — tap Start AR to begin.';
-                btnStartAR.style.display = 'block';
-            } else {
-                statusMsg.textContent = 'Immersive AR not supported on this device.';
-                btnNotSupported.style.display = 'block';
-            }
-        })();
-
-        // ── Enter / exit AR ───────────────────────────────────────────────────
-        const scene   = document.getElementById('ar-scene');
-        const preAR   = document.getElementById('pre-ar');
-        const btnExit = document.getElementById('btn-exit-ar');
-
-        btnStartAR.addEventListener('click', () => scene.enterAR());
-
-        scene.addEventListener('enter-vr', () => {
-            preAR.style.display = 'none';
-            btnExit.style.display = 'block';
+        const slotGroups = Array.from({ length: 4 }, () => {
+            const g = new THREE.Group();
+            carouselRoot.add(g);
+            return g;
         });
 
-        scene.addEventListener('exit-vr', () => {
-            preAR.style.display = 'flex';
-            btnExit.style.display = 'none';
-            resetCarousel();
-        });
-
-        btnExit.addEventListener('click', () => scene.exitVR());
-
-        // ── Hit-test component ────────────────────────────────────────────────
-        AFRAME.registerComponent('ar-hit-test', {
-            init() {
-                this.hitTestSource = null;
-                this.placed        = false;
-                const xr = this.el.sceneEl.renderer.xr;
-
-                xr.addEventListener('sessionstart', async () => {
-                    const session = xr.getSession();
-                    try {
-                        const viewerSpace     = await session.requestReferenceSpace('viewer');
-                        this.hitTestSource    = await session.requestHitTestSource({ space: viewerSpace });
-                    } catch (e) {
-                        console.warn('Hit-test unavailable:', e);
-                    }
-
-                    session.addEventListener('select', () => {
-                        if (this.placed) return;
-                        const reticle = document.getElementById('reticle');
-                        if (!reticle.getAttribute('visible')) return;
-
-                        const arRoot = document.getElementById('ar-root');
-                        arRoot.object3D.position.copy(reticle.object3D.position);
-                        arRoot.object3D.quaternion.copy(reticle.object3D.quaternion);
-                        arRoot.setAttribute('visible', true);
-                        reticle.setAttribute('visible', false);
-                        this.placed = true;
-
-                        document.getElementById('place-hint').style.display = 'none';
-                        document.getElementById('item-indicator').style.display = 'block';
-                        document.getElementById('swipe-hint').style.display     = 'block';
-                        initCarouselOpacities();
-                    });
-                });
-
-                xr.addEventListener('sessionend', () => {
-                    this.hitTestSource = null;
-                    this.placed        = false;
-                });
-            },
-
-            tick() {
-                if (this.placed) return;
-                const frame = this.el.sceneEl.frame;
-                if (!frame || !this.hitTestSource) return;
-
-                const refSpace = this.el.sceneEl.renderer.xr.getReferenceSpace();
-                const results  = frame.getHitTestResults(this.hitTestSource);
-                const reticle  = document.getElementById('reticle');
-
-                if (results.length > 0) {
-                    const pose = results[0].getPose(refSpace);
-                    if (pose) {
-                        const m = new THREE.Matrix4().fromArray(pose.transform.matrix);
-                        reticle.object3D.position.setFromMatrixPosition(m);
-                        reticle.object3D.quaternion.setFromRotationMatrix(m);
-                        reticle.setAttribute('visible', true);
-                    }
-                } else {
-                    reticle.setAttribute('visible', false);
-                }
-            }
-        });
-
-        scene.setAttribute('ar-hit-test', '');
-
-        // ── Menu items (20 placeholders) ──────────────────────────────────────
-        const MENU = Array.from({ length: 20 }, (_, i) => ({ name: `Menu Item ${i + 1}`, src: './food.glb' }));
+        const MENU = Array.from({ length: 20 }, (_, i) => ({ name: `Menu Item ${i + 1}` }));
         const N    = MENU.length;
         const mod  = i => ((i % N) + N) % N;
 
-        // ── Per-role config (positions in metres) ─────────────────────────────
         const CFG = {
-            farLeft:  { pos: [-0.95, 0, 0], scale: [0.12, 0.12, 0.12], opacity: 0    },
-            left:     { pos: [-0.38, 0, 0], scale: [0.12, 0.12, 0.12], opacity: 0.35 },
-            center:   { pos: [0,     0, 0], scale: [0.15, 0.15, 0.15], opacity: 1.0  },
-            right:    { pos: [0.38,  0, 0], scale: [0.12, 0.12, 0.12], opacity: 0.35 },
-            farRight: { pos: [0.95,  0, 0], scale: [0.12, 0.12, 0.12], opacity: 0    },
+            farLeft:  { x: -0.95, s: 0.12, opacity: 0    },
+            left:     { x: -0.38, s: 0.12, opacity: 0.35 },
+            center:   { x:  0,    s: 0.15, opacity: 1.0  },
+            right:    { x:  0.38, s: 0.12, opacity: 0.35 },
+            farRight: { x:  0.95, s: 0.12, opacity: 0    },
         };
 
-        // ── Carousel state ────────────────────────────────────────────────────
-        let slotOf           = { left: 0, center: 1, right: 2, hidden: 3 };
-        let menuOf           = [mod(-1), 0, 1, 2];
-        let hiddenSide       = 'farRight';
+        const INIT_ROLES = ['left', 'center', 'right', 'farRight'];
+        let slotOf            = { left: 0, center: 1, right: 2, hidden: 3 };
+        let menuOf            = [mod(-1), 0, 1, 2];
+        let hiddenSide        = 'farRight';
         let currentCenterMenu = 0;
-        let isAnimating      = false;
-        const DUR            = 350;
+        let isAnimating       = false;
+        const DUR             = 350;
+        const meshObjs        = [null, null, null, null];
 
-        const slotEls  = [0,1,2,3].map(i => document.getElementById(`slot-${i}`));
-        const modelEls = slotEls.map(el => el.querySelector('[gltf-model]'));
+        new GLTFLoader().load('./food.glb', gltf => {
+            for (let i = 0; i < 4; i++) {
+                const obj = gltf.scene.clone();
+                obj.traverse(n => { if (n.isMesh) n.material = n.material.clone(); });
+                slotGroups[i].add(obj);
+                meshObjs[i] = obj;
+            }
+            initSlots();
+        });
 
-        // ── Opacity helpers ───────────────────────────────────────────────────
-        function setMeshOpacity(modelEl, opacity) {
-            const mesh = modelEl.getObject3D('mesh');
-            if (!mesh) return;
-            mesh.traverse(node => {
-                if (!node.isMesh || !node.material) return;
-                if (!node._matCloned) { node.material = node.material.clone(); node._matCloned = true; }
-                node.material.transparent = opacity < 1.0;
-                node.material.opacity     = Math.max(0, Math.min(1, opacity));
-                node.material.needsUpdate = true;
+        function initSlots() {
+            INIT_ROLES.forEach((role, i) => {
+                slotGroups[i].position.x = CFG[role].x;
+                slotGroups[i].scale.setScalar(CFG[role].s);
+                setOpacity(i, CFG[role].opacity);
             });
         }
 
-        function animateOpacity(slotIdx, from, to, dur) {
-            const el = modelEls[slotIdx];
+        // ── Opacity ───────────────────────────────────────────────────────────
+        function setOpacity(idx, opacity) {
+            const obj = meshObjs[idx];
+            if (!obj) return;
+            obj.traverse(n => {
+                if (n.isMesh && n.material) {
+                    n.material.transparent = opacity < 1.0;
+                    n.material.opacity     = Math.max(0, Math.min(1, opacity));
+                    n.material.needsUpdate = true;
+                }
+            });
+        }
+
+        function animOpacity(idx, from, to, dur) {
             const t0 = performance.now();
             (function tick(now) {
                 const t = Math.min((now - t0) / dur, 1);
                 const e = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
-                setMeshOpacity(el, from + (to - from) * e);
+                setOpacity(idx, from + (to - from) * e);
                 if (t < 1) requestAnimationFrame(tick);
-            })(t0);
+            })(performance.now());
         }
 
-        // ── Slot movement helpers ─────────────────────────────────────────────
-        function snapSlot(slotIdx, role) {
-            const el = slotEls[slotIdx];
-            el.removeAttribute('animation__pos');
-            el.removeAttribute('animation__scale');
-            const [x,y,z]    = CFG[role].pos;
-            const [sx,sy,sz] = CFG[role].scale;
-            el.setAttribute('position', `${x} ${y} ${z}`);
-            el.setAttribute('scale',    `${sx} ${sy} ${sz}`);
+        // ── Slot animation ────────────────────────────────────────────────────
+        function snapSlot(idx, role) {
+            slotGroups[idx].position.x = CFG[role].x;
+            slotGroups[idx].scale.setScalar(CFG[role].s);
         }
 
-        function animateSlot(slotIdx, role, dur) {
-            const el = slotEls[slotIdx];
-            const [x,y,z]    = CFG[role].pos;
-            const [sx,sy,sz] = CFG[role].scale;
-            el.setAttribute('animation__pos',   { property: 'position', to: `${x} ${y} ${z}`,       dur, easing: 'easeInOutQuad' });
-            el.setAttribute('animation__scale', { property: 'scale',    to: `${sx} ${sy} ${sz}`,    dur, easing: 'easeInOutQuad' });
-        }
-
-        // ── Set initial opacities after models load ───────────────────────────
-        const initOpacity = [CFG.left.opacity, CFG.center.opacity, CFG.right.opacity, 0];
-
-        function initCarouselOpacities() {
-            modelEls.forEach((el, i) => {
-                const apply = () => setMeshOpacity(el, initOpacity[i]);
-                if (el.getObject3D('mesh')) apply();
-                else el.addEventListener('model-loaded', apply);
-            });
+        function animSlot(idx, role, dur) {
+            const x0 = slotGroups[idx].position.x, x1 = CFG[role].x;
+            const s0 = slotGroups[idx].scale.x,    s1 = CFG[role].s;
+            const t0 = performance.now();
+            (function tick(now) {
+                const t = Math.min((now - t0) / dur, 1);
+                const e = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
+                slotGroups[idx].position.x = x0 + (x1 - x0) * e;
+                slotGroups[idx].scale.setScalar(s0 + (s1 - s0) * e);
+                if (t < 1) requestAnimationFrame(tick);
+            })(performance.now());
         }
 
         // ── Navigation ────────────────────────────────────────────────────────
@@ -391,24 +221,19 @@
             if (isAnimating) return;
             isAnimating = true;
             const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
-
             if (hiddenSide === 'farLeft') snapSlot(hIdx, 'farRight');
             menuOf[hIdx] = mod(menuOf[rIdx] + 1);
-
-            animateSlot(lIdx, 'farLeft', DUR);   animateSlot(cIdx, 'left',    DUR);
-            animateSlot(rIdx, 'center',  DUR);   animateSlot(hIdx, 'right',   DUR);
-
-            animateOpacity(lIdx, CFG.left.opacity,   0,                  DUR);
-            animateOpacity(cIdx, CFG.center.opacity, CFG.left.opacity,   DUR);
-            animateOpacity(rIdx, CFG.right.opacity,  CFG.center.opacity, DUR);
-            animateOpacity(hIdx, 0,                  CFG.right.opacity,  DUR);
-
+            animSlot(lIdx,'farLeft',DUR); animSlot(cIdx,'left',DUR);
+            animSlot(rIdx,'center',DUR);  animSlot(hIdx,'right',DUR);
+            animOpacity(lIdx, CFG.left.opacity,   0,                  DUR);
+            animOpacity(cIdx, CFG.center.opacity, CFG.left.opacity,   DUR);
+            animOpacity(rIdx, CFG.right.opacity,  CFG.center.opacity, DUR);
+            animOpacity(hIdx, 0,                  CFG.right.opacity,  DUR);
             setTimeout(() => {
-                slotOf            = { left: cIdx, center: rIdx, right: hIdx, hidden: lIdx };
-                hiddenSide        = 'farLeft';
+                slotOf = { left:cIdx, center:rIdx, right:hIdx, hidden:lIdx };
+                hiddenSide = 'farLeft';
                 currentCenterMenu = mod(currentCenterMenu + 1);
-                updateLabel();
-                isAnimating = false;
+                updateLabel(); isAnimating = false;
             }, DUR + 10);
         }
 
@@ -416,61 +241,151 @@
             if (isAnimating) return;
             isAnimating = true;
             const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
-
             if (hiddenSide === 'farRight') snapSlot(hIdx, 'farLeft');
             menuOf[hIdx] = mod(menuOf[lIdx] - 1);
-
-            animateSlot(rIdx, 'farRight', DUR);  animateSlot(cIdx, 'right',   DUR);
-            animateSlot(lIdx, 'center',   DUR);  animateSlot(hIdx, 'left',    DUR);
-
-            animateOpacity(rIdx, CFG.right.opacity,  0,                   DUR);
-            animateOpacity(cIdx, CFG.center.opacity, CFG.right.opacity,   DUR);
-            animateOpacity(lIdx, CFG.left.opacity,   CFG.center.opacity,  DUR);
-            animateOpacity(hIdx, 0,                  CFG.left.opacity,    DUR);
-
+            animSlot(rIdx,'farRight',DUR); animSlot(cIdx,'right',DUR);
+            animSlot(lIdx,'center',DUR);   animSlot(hIdx,'left',DUR);
+            animOpacity(rIdx, CFG.right.opacity,  0,                   DUR);
+            animOpacity(cIdx, CFG.center.opacity, CFG.right.opacity,   DUR);
+            animOpacity(lIdx, CFG.left.opacity,   CFG.center.opacity,  DUR);
+            animOpacity(hIdx, 0,                  CFG.left.opacity,    DUR);
             setTimeout(() => {
-                slotOf            = { left: hIdx, center: lIdx, right: cIdx, hidden: rIdx };
-                hiddenSide        = 'farRight';
+                slotOf = { left:hIdx, center:lIdx, right:cIdx, hidden:rIdx };
+                hiddenSide = 'farRight';
                 currentCenterMenu = mod(currentCenterMenu - 1);
-                updateLabel();
-                isAnimating = false;
+                updateLabel(); isAnimating = false;
             }, DUR + 10);
         }
 
         function updateLabel() {
-            document.getElementById('item-indicator').textContent =
+            document.getElementById('item-label').textContent =
                 `${MENU[currentCenterMenu].name} · ${currentCenterMenu + 1} / ${N}`;
         }
 
-        function resetCarousel() {
-            slotOf            = { left: 0, center: 1, right: 2, hidden: 3 };
-            menuOf            = [mod(-1), 0, 1, 2];
-            hiddenSide        = 'farRight';
-            currentCenterMenu = 0;
-            isAnimating       = false;
-            [0,1,2,3].forEach(i => snapSlot(i, ['left','center','right','farRight'][i]));
-            document.getElementById('ar-root').setAttribute('visible', false);
-            document.getElementById('reticle').setAttribute('visible', false);
-            document.getElementById('place-hint').style.display    = 'block';
-            document.getElementById('item-indicator').style.display = 'none';
-            document.getElementById('swipe-hint').style.display     = 'none';
-            updateLabel();
+        // ── WebXR session management ──────────────────────────────────────────
+        let hitTestSource = null;
+        let placed        = false;
+        let xrSession     = null;
+
+        const preAR     = document.getElementById('pre-ar');
+        const overlay   = document.getElementById('ar-overlay');
+        const statusEl  = document.getElementById('status');
+        const btnStart  = document.getElementById('btn-start');
+
+        // Hit-test source is set up inside the sessionstart event
+        renderer.xr.addEventListener('sessionstart', async () => {
+            try {
+                const session     = renderer.xr.getSession();
+                const viewerSpace = await session.requestReferenceSpace('viewer');
+                hitTestSource     = await session.requestHitTestSource({ space: viewerSpace });
+            } catch (e) {
+                console.error('Hit-test source error:', e);
+            }
+        });
+
+        renderer.xr.addEventListener('sessionend', () => {
+            hitTestSource = null;
+            placed        = false;
+            xrSession     = null;
+            carouselRoot.visible = false;
+            reticle.visible      = false;
+            preAR.style.display   = 'flex';
+            overlay.style.display = 'none';
+            document.getElementById('place-hint').style.display = 'block';
+            document.getElementById('item-label').style.display  = 'none';
+            document.getElementById('swipe-hint').style.display  = 'none';
+            slotOf = { left:0, center:1, right:2, hidden:3 };
+            menuOf = [mod(-1), 0, 1, 2];
+            hiddenSide = 'farRight'; currentCenterMenu = 0; isAnimating = false;
+            initSlots(); updateLabel();
+        });
+
+        // Render loop — running continuously; switches to XR frames when session is active
+        renderer.setAnimationLoop((time, frame) => {
+            if (frame && !placed && hitTestSource) {
+                const refSpace = renderer.xr.getReferenceSpace();
+                if (refSpace) {
+                    const results = frame.getHitTestResults(hitTestSource);
+                    if (results.length > 0) {
+                        const pose = results[0].getPose(refSpace);
+                        if (pose) {
+                            reticle.visible = true;
+                            reticle.matrix.fromArray(pose.transform.matrix);
+                        }
+                    } else {
+                        reticle.visible = false;
+                    }
+                }
+            }
+            renderer.render(scene, camera);
+        });
+
+        // Tap to place carousel
+        function onSelect() {
+            if (placed || !reticle.visible) return;
+            carouselRoot.position.setFromMatrixPosition(reticle.matrix);
+            carouselRoot.quaternion.setFromRotationMatrix(reticle.matrix);
+            carouselRoot.visible = true;
+            reticle.visible      = false;
+            placed               = true;
+            document.getElementById('place-hint').style.display = 'none';
+            document.getElementById('item-label').style.display  = 'block';
+            document.getElementById('swipe-hint').style.display  = 'block';
         }
 
-        // ── Swipe detection ───────────────────────────────────────────────────
+        // Check WebXR support on load
+        if (!navigator.xr) {
+            showUnsupported('WebXR not available on this browser.');
+        } else {
+            navigator.xr.isSessionSupported('immersive-ar')
+                .then(ok => {
+                    if (ok) {
+                        statusEl.textContent       = 'Device ready.';
+                        btnStart.style.display     = 'block';
+                    } else {
+                        showUnsupported('AR not supported on this device.');
+                    }
+                })
+                .catch(() => showUnsupported('Could not check AR support.'));
+        }
+
+        function showUnsupported(msg) {
+            statusEl.textContent = msg;
+            document.getElementById('btn-unsupported').style.display = 'block';
+        }
+
+        btnStart.addEventListener('click', async () => {
+            statusEl.textContent = 'Starting…';
+            try {
+                xrSession = await navigator.xr.requestSession('immersive-ar', {
+                    requiredFeatures: ['hit-test'],
+                    optionalFeatures: ['dom-overlay'],
+                    domOverlay: { root: overlay }
+                });
+            } catch (e) {
+                statusEl.textContent = 'Failed to start: ' + e.message;
+                return;
+            }
+
+            xrSession.addEventListener('select', onSelect);
+            await renderer.xr.setSession(xrSession);
+
+            preAR.style.display   = 'none';
+            overlay.style.display = 'block';
+        });
+
+        document.getElementById('btn-exit').addEventListener('click', () => xrSession?.end());
+
+        // ── Swipe ─────────────────────────────────────────────────────────────
         let tx = 0, ty = 0, tt = 0;
         document.addEventListener('touchstart', e => {
-            tx = e.touches[0].clientX;
-            ty = e.touches[0].clientY;
-            tt = Date.now();
+            tx = e.touches[0].clientX; ty = e.touches[0].clientY; tt = Date.now();
         }, { passive: true });
-
         document.addEventListener('touchend', e => {
             const dx = e.changedTouches[0].clientX - tx;
             const dy = e.changedTouches[0].clientY - ty;
-            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) && Date.now() - tt < 500) {
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) && Date.now() - tt < 500)
                 dx < 0 ? goNext() : goPrev();
-            }
         }, { passive: true });
     </script>
 </body>
