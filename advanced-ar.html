@@ -5,35 +5,235 @@
     <title>Premium AR Menu</title>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
-        body { margin: 0; background: #222; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
-        model-viewer { width: 90%; height: 70vh; background-color: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .ar-btn { background: #ff4757; color: white; border: none; padding: 15px 30px; border-radius: 30px; margin-top: 20px; font-weight: bold; font-size: 16px; cursor: pointer;}
-        
-        /* The Escape Hatch Button Style */
-        .escape-hatch { margin-top: 15px; background: transparent; color: #aaa; border: 1px solid #555; padding: 10px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; text-decoration: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100dvh;
+            font-family: sans-serif;
+            overflow: hidden;
+            padding: 12px 0 20px;
+            gap: 10px;
+        }
+
+        /* ── Carousel ───────────────────────────────────────────────────── */
+        #carousel {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            flex: 1;
+            gap: 8px;
+            padding: 0 8px;
+            min-height: 0;
+            transition: opacity 0.2s ease;
+        }
+        #carousel.fading { opacity: 0; }
+
+        .slot-side {
+            flex: 0 0 20%;
+            height: 65%;
+            opacity: 0.38;
+            pointer-events: none;
+        }
+        .slot-center {
+            flex: 1;
+            height: 100%;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            border-radius: 14px;
+            background-color: #2c2c2c;
+        }
+
+        /* ── Item label ─────────────────────────────────────────────────── */
+        #item-label {
+            color: #ccc;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+        }
+
+        /* ── Bottom controls: prev · AR button · next ───────────────────── */
+        #controls {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 26px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .nav-btn:active { background: rgba(255,255,255,0.22); }
+
+        .ar-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .escape-hatch {
+            position: fixed;
+            bottom: 8px;
+            right: 12px;
+            background: transparent;
+            color: #555;
+            border: 1px solid #444;
+            padding: 7px 13px;
+            border-radius: 14px;
+            font-size: 11px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <model-viewer src="./food.glb" 
-                  ar 
-                  ar-modes="webxr scene-viewer quick-look" 
-                  camera-controls 
-                  shadow-intensity="1" 
-                  auto-rotate>
-        <button slot="ar-button" class="ar-btn">View on Table</button>
-    </model-viewer>
 
-    <button class="escape-hatch" onclick="window.location.replace('mind-ar-fallback.html')">
+    <!-- Carousel row -->
+    <div id="carousel">
+        <div class="slot-side">
+            <model-viewer id="mv-prev"
+                          src="./food.glb"
+                          camera-controls
+                          shadow-intensity="0.3"
+                          disable-zoom>
+            </model-viewer>
+        </div>
+
+        <div class="slot-center">
+            <model-viewer id="mv-center"
+                          src="./food.glb"
+                          ar
+                          ar-modes="webxr scene-viewer quick-look"
+                          camera-controls
+                          shadow-intensity="1"
+                          auto-rotate>
+                <button slot="ar-button" class="ar-btn">View on Table</button>
+            </model-viewer>
+        </div>
+
+        <div class="slot-side">
+            <model-viewer id="mv-next"
+                          src="./food.glb"
+                          camera-controls
+                          shadow-intensity="0.3"
+                          disable-zoom>
+            </model-viewer>
+        </div>
+    </div>
+
+    <!-- Current item label -->
+    <div id="item-label">Menu Item 1 &nbsp;&middot;&nbsp; 1 / 20</div>
+
+    <!-- Prev / next buttons (bottom, not overlapping the model) -->
+    <div id="controls">
+        <button class="nav-btn" id="btn-prev" aria-label="Previous item">&#8249;</button>
+        <button class="nav-btn" id="btn-next" aria-label="Next item">&#8250;</button>
+    </div>
+
+    <button class="escape-hatch"
+            onclick="window.location.replace('mind-ar-fallback.html')">
         Camera not turning on? Click here.
     </button>
 
     <script>
-        const viewer = document.querySelector('model-viewer');
-        viewer.addEventListener('ar-status', (e) => {
+        // ── Menu items (20 placeholders, all food.glb) ───────────────────────
+        const MENU = Array.from({ length: 20 }, (_, i) => ({
+            name: `Menu Item ${i + 1}`,
+            src: './food.glb'
+        }));
+        const N   = MENU.length;
+        const mod = i => ((i % N) + N) % N;
+
+        let currentIdx  = 0;
+        let isAnimating = false;
+
+        const carousel  = document.getElementById('carousel');
+        const mvPrev    = document.getElementById('mv-prev');
+        const mvCenter  = document.getElementById('mv-center');
+        const mvNext    = document.getElementById('mv-next');
+        const itemLabel = document.getElementById('item-label');
+
+        function updateViewers() {
+            mvPrev.setAttribute('src',   MENU[mod(currentIdx - 1)].src);
+            mvCenter.setAttribute('src', MENU[currentIdx].src);
+            mvNext.setAttribute('src',   MENU[mod(currentIdx + 1)].src);
+            itemLabel.innerHTML =
+                `${MENU[currentIdx].name} &nbsp;&middot;&nbsp; ${currentIdx + 1} / ${N}`;
+        }
+
+        function navigate(dir) {
+            if (isAnimating) return;
+            isAnimating = true;
+            carousel.classList.add('fading');
+            setTimeout(() => {
+                currentIdx = mod(currentIdx + dir);
+                updateViewers();
+                carousel.classList.remove('fading');
+                setTimeout(() => { isAnimating = false; }, 200);
+            }, 200);
+        }
+
+        document.getElementById('btn-prev').addEventListener('click', () => navigate(-1));
+        document.getElementById('btn-next').addEventListener('click', () => navigate(+1));
+
+        // ── Swipe detection ───────────────────────────────────────────────────
+        // model-viewer intercepts center-area touch for camera rotation,
+        // so we only treat it as a carousel swipe when:
+        //   (a) the touch started in the side zones (outer 25%), OR
+        //   (b) it was a fast, large flick anywhere on screen
+        let tx = 0, ty = 0, tt = 0;
+
+        document.addEventListener('touchstart', e => {
+            tx = e.touches[0].clientX;
+            ty = e.touches[0].clientY;
+            tt = Date.now();
+        }, { passive: true });
+
+        document.addEventListener('touchend', e => {
+            const dx      = e.changedTouches[0].clientX - tx;
+            const dy      = e.changedTouches[0].clientY - ty;
+            const elapsed = Date.now() - tt;
+            const pct     = tx / window.innerWidth;
+
+            const isHoriz    = Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy);
+            const inSideZone = pct < 0.25 || pct > 0.75;
+            const isQuick    = elapsed < 280 && Math.abs(dx) > 90;
+
+            if (isHoriz && elapsed < 500 && (inSideZone || isQuick)) {
+                navigate(dx < 0 ? +1 : -1);
+            }
+        }, { passive: true });
+
+        // ── AR failed → fall back to MindAR ──────────────────────────────────
+        mvCenter.addEventListener('ar-status', e => {
             if (e.detail.status === 'failed') {
                 window.location.replace('mind-ar-fallback.html');
             }
         });
+
+        updateViewers();
     </script>
 
 </body>

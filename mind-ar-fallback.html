@@ -5,15 +5,11 @@
     <title>AR Menu</title>
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for (let r of registrations) { r.unregister(); }
-        });
+        navigator.serviceWorker.getRegistrations().then(r => r.forEach(s => s.unregister()));
       }
     </script>
-
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-
     <style>
         body { margin: 0; overflow: hidden; }
 
@@ -35,6 +31,41 @@
         }
         #scan-hint.hidden { opacity: 0; }
 
+        #item-indicator {
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-family: sans-serif;
+            font-size: 14px;
+            padding: 8px 18px;
+            border-radius: 20px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        #item-indicator.visible { opacity: 1; }
+
+        #swipe-hint {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.65);
+            font-family: sans-serif;
+            font-size: 13px;
+            pointer-events: none;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.4s;
+            z-index: 10;
+        }
+        #swipe-hint.visible { opacity: 1; }
+
         #fallback-btn {
             position: fixed;
             top: 18px;
@@ -53,6 +84,8 @@
 </head>
 <body>
     <div id="scan-hint">Point camera at the menu marker</div>
+    <div id="item-indicator">Menu Item 1 &middot; 1 / 20</div>
+    <div id="swipe-hint">&#8592; swipe to browse &#8594;</div>
     <button id="fallback-btn" onclick="window.location.replace('advanced-ar.html')">Try Premium AR</button>
 
     <a-scene mindar-image="imageTargetSrc: ./menu-marker.mind;
@@ -74,24 +107,217 @@
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-entity gltf-model="#food-model"
-                  position="0 0 0.1"
-                  rotation="90 0 0"
-                  scale="0.3 0.3 0.3">
+
+        <!-- slot-0: initial role = left -->
+        <a-entity id="slot-0" position="-0.8 0 0" scale="0.25 0.25 0.25">
+          <a-entity gltf-model="#food-model" rotation="90 0 0"></a-entity>
         </a-entity>
+
+        <!-- slot-1: initial role = center -->
+        <a-entity id="slot-1" position="0 0 0.1" scale="0.3 0.3 0.3">
+          <a-entity gltf-model="#food-model" rotation="90 0 0"></a-entity>
+        </a-entity>
+
+        <!-- slot-2: initial role = right -->
+        <a-entity id="slot-2" position="0.8 0 0" scale="0.25 0.25 0.25">
+          <a-entity gltf-model="#food-model" rotation="90 0 0"></a-entity>
+        </a-entity>
+
+        <!-- slot-3: initial role = hidden (far right, off-screen) -->
+        <a-entity id="slot-3" position="2.2 0 0" scale="0.25 0.25 0.25">
+          <a-entity gltf-model="#food-model" rotation="90 0 0"></a-entity>
+        </a-entity>
+
       </a-entity>
     </a-scene>
 
     <script>
-        const hint = document.getElementById('scan-hint');
+        // ── Menu items (20 placeholders, all using food.glb) ─────────────────
+        const MENU = Array.from({ length: 20 }, (_, i) => ({
+            name: `Menu Item ${i + 1}`,
+            src: './food.glb'
+        }));
+        const N   = MENU.length;
+        const mod = i => ((i % N) + N) % N;
+
+        // ── Per-role config: position, scale, opacity ─────────────────────────
+        const CFG = {
+            farLeft:  { pos: [-2.2, 0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0    },
+            left:     { pos: [-0.8, 0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0.35 },
+            center:   { pos: [0,    0, 0.1],scale: [0.3,  0.3,  0.3 ], opacity: 1.0  },
+            right:    { pos: [0.8,  0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0.35 },
+            farRight: { pos: [2.2,  0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0    },
+        };
+
+        // ── Carousel state ────────────────────────────────────────────────────
+        // slotOf[role] = physical slot index 0–3
+        let slotOf = { left: 0, center: 1, right: 2, hidden: 3 };
+        // menuOf[slotIdx] = which MENU index that slot currently displays
+        let menuOf = [mod(-1), 0, 1, 2];
+        let hiddenSide = 'farRight'; // which side the hidden slot is parked on
+        let currentCenterMenu = 0;
+        let isAnimating = false;
+        const DUR = 350; // animation duration ms
+
+        // ── DOM refs ──────────────────────────────────────────────────────────
+        const slotEls  = [0,1,2,3].map(i => document.getElementById(`slot-${i}`));
+        const modelEls = slotEls.map(el => el.querySelector('[gltf-model]'));
+
+        // ── Opacity helpers ───────────────────────────────────────────────────
+        function setMeshOpacity(modelEl, opacity) {
+            const mesh = modelEl.getObject3D('mesh');
+            if (!mesh) return;
+            mesh.traverse(node => {
+                if (!node.isMesh || !node.material) return;
+                if (!node._matCloned) {
+                    node.material = node.material.clone();
+                    node._matCloned = true;
+                }
+                node.material.transparent = opacity < 1.0;
+                node.material.opacity = Math.max(0, Math.min(1, opacity));
+                node.material.needsUpdate = true;
+            });
+        }
+
+        function animateOpacity(slotIdx, from, to, dur) {
+            const el = modelEls[slotIdx];
+            const t0 = performance.now();
+            (function tick(now) {
+                const t = Math.min((now - t0) / dur, 1);
+                const e = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t; // easeInOutQuad
+                setMeshOpacity(el, from + (to - from) * e);
+                if (t < 1) requestAnimationFrame(tick);
+            })(t0);
+        }
+
+        // ── Slot position / scale helpers ─────────────────────────────────────
+        function snapSlot(slotIdx, role) {
+            const el = slotEls[slotIdx];
+            el.removeAttribute('animation__pos');
+            el.removeAttribute('animation__scale');
+            const [x, y, z]    = CFG[role].pos;
+            const [sx, sy, sz] = CFG[role].scale;
+            el.setAttribute('position', `${x} ${y} ${z}`);
+            el.setAttribute('scale',    `${sx} ${sy} ${sz}`);
+        }
+
+        function animateSlot(slotIdx, role, dur) {
+            const el = slotEls[slotIdx];
+            const [x, y, z]    = CFG[role].pos;
+            const [sx, sy, sz] = CFG[role].scale;
+            el.setAttribute('animation__pos', {
+                property: 'position',
+                to: `${x} ${y} ${z}`,
+                dur, easing: 'easeInOutQuad'
+            });
+            el.setAttribute('animation__scale', {
+                property: 'scale',
+                to: `${sx} ${sy} ${sz}`,
+                dur, easing: 'easeInOutQuad'
+            });
+        }
+
+        // ── Set initial opacities when each model loads ───────────────────────
+        const initOpacity = [CFG.left.opacity, CFG.center.opacity, CFG.right.opacity, 0];
+        modelEls.forEach((el, i) => {
+            el.addEventListener('model-loaded', () => setMeshOpacity(el, initOpacity[i]));
+        });
+
+        // ── Navigation ────────────────────────────────────────────────────────
+        function goNext() {
+            if (isAnimating) return;
+            isAnimating = true;
+            const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
+
+            // Hidden slot must enter from the right; teleport it if it's on the wrong side
+            if (hiddenSide === 'farLeft') snapSlot(hIdx, 'farRight');
+            menuOf[hIdx] = mod(menuOf[rIdx] + 1);
+
+            animateSlot(lIdx, 'farLeft', DUR);
+            animateSlot(cIdx, 'left',    DUR);
+            animateSlot(rIdx, 'center',  DUR);
+            animateSlot(hIdx, 'right',   DUR);
+
+            animateOpacity(lIdx, CFG.left.opacity,   0,                   DUR);
+            animateOpacity(cIdx, CFG.center.opacity, CFG.left.opacity,    DUR);
+            animateOpacity(rIdx, CFG.right.opacity,  CFG.center.opacity,  DUR);
+            animateOpacity(hIdx, 0,                  CFG.right.opacity,   DUR);
+
+            setTimeout(() => {
+                slotOf      = { left: cIdx, center: rIdx, right: hIdx, hidden: lIdx };
+                hiddenSide  = 'farLeft';
+                currentCenterMenu = mod(currentCenterMenu + 1);
+                updateLabel();
+                isAnimating = false;
+            }, DUR + 10);
+        }
+
+        function goPrev() {
+            if (isAnimating) return;
+            isAnimating = true;
+            const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
+
+            // Hidden slot must enter from the left; teleport it if it's on the wrong side
+            if (hiddenSide === 'farRight') snapSlot(hIdx, 'farLeft');
+            menuOf[hIdx] = mod(menuOf[lIdx] - 1);
+
+            animateSlot(rIdx, 'farRight', DUR);
+            animateSlot(cIdx, 'right',    DUR);
+            animateSlot(lIdx, 'center',   DUR);
+            animateSlot(hIdx, 'left',     DUR);
+
+            animateOpacity(rIdx, CFG.right.opacity,  0,                   DUR);
+            animateOpacity(cIdx, CFG.center.opacity, CFG.right.opacity,   DUR);
+            animateOpacity(lIdx, CFG.left.opacity,   CFG.center.opacity,  DUR);
+            animateOpacity(hIdx, 0,                  CFG.left.opacity,    DUR);
+
+            setTimeout(() => {
+                slotOf      = { left: hIdx, center: lIdx, right: cIdx, hidden: rIdx };
+                hiddenSide  = 'farRight';
+                currentCenterMenu = mod(currentCenterMenu - 1);
+                updateLabel();
+                isAnimating = false;
+            }, DUR + 10);
+        }
+
+        // ── Label ─────────────────────────────────────────────────────────────
+        const indicator = document.getElementById('item-indicator');
+        const swipeHint = document.getElementById('swipe-hint');
+
+        function updateLabel() {
+            indicator.textContent = `${MENU[currentCenterMenu].name} · ${currentCenterMenu + 1} / ${N}`;
+        }
+
+        // ── Show/hide overlay on target found/lost ────────────────────────────
+        const hint  = document.getElementById('scan-hint');
         const scene = document.querySelector('a-scene');
 
         scene.addEventListener('targetFound', () => {
             hint.classList.add('hidden');
+            indicator.classList.add('visible');
+            swipeHint.classList.add('visible');
         });
         scene.addEventListener('targetLost', () => {
             hint.classList.remove('hidden');
+            indicator.classList.remove('visible');
+            swipeHint.classList.remove('visible');
         });
+
+        // ── Swipe detection ───────────────────────────────────────────────────
+        let tx = 0, ty = 0, tt = 0;
+        document.addEventListener('touchstart', e => {
+            tx = e.touches[0].clientX;
+            ty = e.touches[0].clientY;
+            tt = Date.now();
+        }, { passive: true });
+
+        document.addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - tx;
+            const dy = e.changedTouches[0].clientY - ty;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) && Date.now() - tt < 500) {
+                dx < 0 ? goNext() : goPrev();
+            }
+        }, { passive: true });
     </script>
 </body>
 </html>
