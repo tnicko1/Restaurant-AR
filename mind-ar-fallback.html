@@ -105,38 +105,38 @@
       <a-entity mindar-image-target="targetIndex: 0">
 
         <!-- slot-0: initial role = left -->
-        <a-entity id="slot-0" position="-0.8 0 0" scale="0.25 0.25 0.25">
+        <a-entity id="slot-0" position="-2.4 0 0" scale="0.75 0.75 0.75">
           <a-entity class="model-entity" rotation="90 0 0"></a-entity>
         </a-entity>
 
         <!-- slot-1: initial role = center -->
-        <a-entity id="slot-1" position="0 0 0.1" scale="0.3 0.3 0.3">
+        <a-entity id="slot-1" position="0 0 0.3" scale="0.9 0.9 0.9">
           <a-entity class="model-entity" rotation="90 0 0"></a-entity>
         </a-entity>
 
         <!-- slot-2: initial role = right -->
-        <a-entity id="slot-2" position="0.8 0 0" scale="0.25 0.25 0.25">
+        <a-entity id="slot-2" position="2.4 0 0" scale="0.75 0.75 0.75">
           <a-entity class="model-entity" rotation="90 0 0"></a-entity>
         </a-entity>
 
         <!-- slot-3: initial role = hidden (far right) -->
-        <a-entity id="slot-3" position="2.2 0 0" scale="0.25 0.25 0.25">
+        <a-entity id="slot-3" position="6.6 0 0" scale="0.75 0.75 0.75">
           <a-entity class="model-entity" rotation="90 0 0"></a-entity>
         </a-entity>
 
         <!-- Name label — floats above the model, faces camera via look-at -->
-        <a-entity id="label-name-wrap" position="0 0 0.42" visible="false">
+        <a-entity id="label-name-wrap" position="0 0 1.26" visible="false">
           <a-entity look-at="[camera]">
             <a-text id="label-name" value="" color="#FFFFFF" align="center"
-                    width="1.5" wrapCount="18" rotation="0 180 0" negate="false"></a-text>
+                    width="4.5" wrapCount="18" rotation="0 180 0" negate="false"></a-text>
           </a-entity>
         </a-entity>
 
         <!-- Info label — sits at model base level, faces camera -->
-        <a-entity id="label-info-wrap" position="0 0 0.05" visible="false">
+        <a-entity id="label-info-wrap" position="0 0 0.15" visible="false">
           <a-entity look-at="[camera]">
             <a-text id="label-info" value="" color="#FFD700" align="center"
-                    width="1.8" wrapCount="28" rotation="0 180 0" negate="false"></a-text>
+                    width="5.4" wrapCount="28" rotation="0 180 0" negate="false"></a-text>
           </a-entity>
         </a-entity>
 
@@ -151,11 +151,11 @@
 
         // ── Per-role config ───────────────────────────────────────────────────
         const CFG = {
-            farLeft:  { pos: [-2.2, 0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0    },
-            left:     { pos: [-0.8, 0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0.35 },
-            center:   { pos: [0,    0, 0.1], scale: [0.3,  0.3,  0.3 ], opacity: 1.0  },
-            right:    { pos: [0.8,  0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0.35 },
-            farRight: { pos: [2.2,  0, 0],  scale: [0.25, 0.25, 0.25], opacity: 0    },
+            farLeft:  { pos: [-6.6, 0, 0],  scale: [0.75, 0.75, 0.75], opacity: 0    },
+            left:     { pos: [-2.4, 0, 0],  scale: [0.75, 0.75, 0.75], opacity: 0.35 },
+            center:   { pos: [0,    0, 0.3], scale: [0.9,  0.9,  0.9 ], opacity: 1.0  },
+            right:    { pos: [2.4,  0, 0],  scale: [0.75, 0.75, 0.75], opacity: 0.35 },
+            farRight: { pos: [6.6,  0, 0],  scale: [0.75, 0.75, 0.75], opacity: 0    },
         };
 
         // ── Carousel state ────────────────────────────────────────────────────

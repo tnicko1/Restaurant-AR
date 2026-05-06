@@ -14,98 +14,115 @@
             align-items: center;
             min-height: 100vh;
             font-family: sans-serif;
-            padding-bottom: 24px;
+            padding-bottom: 20px;
         }
 
         model-viewer {
             width: 90%;
-            height: 52vh;
+            height: 60vh;
             background-color: #fff;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             margin-top: 16px;
         }
 
-        /* ── Item info card ────────────────────────────────── */
-        #item-card {
-            width: 90%;
-            background: rgba(0,0,0,0.55);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 14px 18px;
-            margin-top: 12px;
-            color: white;
-        }
-        #item-counter {
-            font-size: 12px;
-            color: #888;
-            margin-bottom: 5px;
-        }
-        #item-name {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-        #item-price {
-            font-size: 17px;
-            color: #FFD700;
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-        #item-description {
-            font-size: 14px;
-            color: #ccc;
-            line-height: 1.5;
-        }
-
-        /* ── Prev / Next navigation ────────────────────────── */
         #nav-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             width: 90%;
             margin-top: 10px;
-            gap: 10px;
+            gap: 8px;
         }
         .nav-btn {
             flex: 1;
             background: rgba(255,255,255,0.08);
             border: 1px solid rgba(255,255,255,0.2);
             color: white;
-            padding: 12px 0;
-            border-radius: 20px;
-            font-size: 20px;
+            padding: 8px 0;
+            border-radius: 14px;
+            font-size: 16px;
             cursor: pointer;
         }
         .nav-btn:active { background: rgba(255,255,255,0.18); }
+        #item-counter {
+            color: #888;
+            font-size: 12px;
+            text-align: center;
+            min-width: 48px;
+        }
 
-        /* ── AR + escape buttons ───────────────────────────── */
         .ar-btn {
             background: #ff4757;
             color: white;
             border: none;
-            padding: 15px 30px;
+            padding: 14px 28px;
             border-radius: 30px;
-            margin-top: 14px;
+            margin-top: 12px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
         }
         .escape-hatch {
-            margin-top: 10px;
+            margin-top: 8px;
             background: transparent;
             color: #aaa;
             border: 1px solid #555;
-            padding: 10px 20px;
+            padding: 8px 18px;
             border-radius: 20px;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
         }
+
+        /* ── AR DOM overlay ─────────────────────────────────────── */
+        /* pointer-events: none so the model is never obstructed    */
+        #ar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+        #ar-overlay.active { display: block; }
+
+        #ar-name {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.52);
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 6px 16px;
+            border-radius: 20px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.35s;
+        }
+        #ar-bottom {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.52);
+            padding: 8px 16px;
+            border-radius: 16px;
+            text-align: center;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.35s;
+        }
+        #ar-price { color: #FFD700; font-weight: bold; font-size: 13px; }
+        #ar-desc  { color: #ccc; font-size: 11px; margin-top: 3px; }
+
+        #ar-overlay.labels-on #ar-name,
+        #ar-overlay.labels-on #ar-bottom { opacity: 1; }
     </style>
 </head>
 <body>
     <model-viewer id="viewer"
-                  src="./food.glb"
+                  src=""
                   ar
                   ar-modes="webxr scene-viewer quick-look"
                   camera-controls
@@ -114,70 +131,115 @@
         <button slot="ar-button" class="ar-btn">View on Table</button>
     </model-viewer>
 
-    <!-- Item info card -->
-    <div id="item-card">
-        <div id="item-counter">1 / 1</div>
-        <div id="item-name">Loading…</div>
-        <div id="item-price"></div>
-        <div id="item-description"></div>
-    </div>
-
-    <!-- Prev / Next buttons -->
     <div id="nav-row">
-        <button class="nav-btn" id="btn-prev">&#8592; Prev</button>
-        <button class="nav-btn" id="btn-next">Next &#8594;</button>
+        <button class="nav-btn" id="btn-prev">&#8592;</button>
+        <div id="item-counter">– / –</div>
+        <button class="nav-btn" id="btn-next">&#8594;</button>
     </div>
 
     <button class="escape-hatch" onclick="window.location.replace('mind-ar-fallback.html')">
         Camera not turning on? Click here.
     </button>
-
-    <button class="escape-hatch" style="color: #ff4757; border-color: #ff4757;"
+    <button class="escape-hatch" style="color:#ff4757;border-color:#ff4757;"
             onclick="window.location.href='ar-webxr.html'">
         &#9883; Try 3-Model WebXR (beta)
     </button>
 
+    <!-- AR overlay — pointer-events:none keeps model fully tappable -->
+    <div id="ar-overlay">
+        <div id="ar-name"></div>
+        <div id="ar-bottom">
+            <div id="ar-price"></div>
+            <div id="ar-desc"></div>
+        </div>
+    </div>
+
     <script>
-        const viewer = document.getElementById('viewer');
-
-        viewer.addEventListener('ar-status', e => {
-            if (e.detail.status === 'failed')
-                window.location.replace('mind-ar-fallback.html');
-        });
-
-        let MENU = [];
+        const viewer  = document.getElementById('viewer');
+        const overlay = document.getElementById('ar-overlay');
+        let MENU    = [];
         let current = 0;
+        let inAR    = false;
 
         function updateUI() {
             const item = MENU[current];
             if (!item) return;
-            document.getElementById('item-counter').textContent    = `${current + 1} / ${MENU.length}`;
-            document.getElementById('item-name').textContent        = item.name;
-            document.getElementById('item-price').textContent       = item.price;
-            document.getElementById('item-description').textContent = item.description;
-            viewer.setAttribute('src', item.model || 'food.glb');
+            document.getElementById('item-counter').textContent = `${current + 1} / ${MENU.length}`;
+            document.getElementById('ar-name').textContent  = item.name;
+            document.getElementById('ar-price').textContent = item.price;
+            document.getElementById('ar-desc').textContent  = item.description;
         }
 
-        document.getElementById('btn-prev').addEventListener('click', () => {
-            current = ((current - 1) + MENU.length) % MENU.length;
+        function navigate(dir) {
+            current = ((current + dir) + MENU.length) % MENU.length;
+            const item = MENU[current];
+            overlay.classList.remove('labels-on');
+            viewer.src = item.model || 'food.glb';
             updateUI();
-        });
-        document.getElementById('btn-next').addEventListener('click', () => {
-            current = (current + 1) % MENU.length;
-            updateUI();
+            // In AR, re-show labels once new model fires load or after timeout
+            if (inAR) {
+                viewer.addEventListener('load', showLabelsOnce, { once: true });
+                setTimeout(showLabelsOnce, 2000);
+            }
+        }
+
+        let _labelsShown = false;
+        function showLabelsOnce() {
+            if (_labelsShown) return;
+            _labelsShown = true;
+            overlay.classList.add('labels-on');
+            setTimeout(() => { _labelsShown = false; }, 100);
+        }
+
+        document.getElementById('btn-prev').addEventListener('click', () => navigate(-1));
+        document.getElementById('btn-next').addEventListener('click', () => navigate(1));
+
+        // Swipe — works in both preview and AR
+        let tx = 0, ty = 0, tt = 0;
+        document.addEventListener('touchstart', e => {
+            tx = e.touches[0].clientX;
+            ty = e.touches[0].clientY;
+            tt = Date.now();
+        }, { passive: true });
+        document.addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - tx;
+            const dy = e.changedTouches[0].clientY - ty;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) && Date.now() - tt < 500)
+                navigate(dx < 0 ? 1 : -1);
+        }, { passive: true });
+
+        // AR status events
+        viewer.addEventListener('ar-status', e => {
+            const s = e.detail.status;
+            if (s === 'session-started') {
+                inAR = true;
+                overlay.classList.add('active');
+                overlay.classList.remove('labels-on');
+            } else if (s === 'object-placed') {
+                overlay.classList.add('labels-on');
+            } else if (s === 'not-presenting') {
+                inAR = false;
+                overlay.classList.remove('active', 'labels-on');
+            } else if (s === 'failed') {
+                inAR = false;
+                overlay.classList.remove('active', 'labels-on');
+                window.location.replace('mind-ar-fallback.html');
+            }
         });
 
+        // Boot
         fetch('./foods/menu.json')
             .then(r => r.json())
             .catch(() => null)
             .then(data => {
                 MENU = data || [
-                    { name: 'Druidi',     description: 'Ancient grain bowl with roasted herbs, olive oil & spiced lamb',           price: '$18.99', model: 'Druidi.glb' },
-                    { name: 'Asteroidi',  description: 'Crispy meteor-shaped fritters with spiced chickpea filling & tahini drizzle', price: '$12.99', model: 'food.glb'   },
-                    { name: 'Iulius',     description: 'Slow-braised veal shank with saffron risotto & gremolata',                 price: '$24.99', model: 'Druidi.glb' },
-                    { name: 'Pompeii',    description: 'Wood-fired flatbread with San Marzano tomato, buffalo mozzarella & basil', price: '$14.99', model: 'food.glb'   },
-                    { name: 'Galius',     description: 'Charcoal-grilled chicken thighs with roasted garlic, lemon & wild herbs', price: '$16.99', model: 'Druidi.glb' },
+                    { name: 'Druidi',    description: 'Ancient grain bowl with roasted herbs, olive oil & spiced lamb',              price: '$18.99', model: 'Druidi.glb' },
+                    { name: 'Asteroidi', description: 'Crispy meteor-shaped fritters with spiced chickpea filling & tahini drizzle', price: '$12.99', model: 'food.glb'   },
+                    { name: 'Iulius',    description: 'Slow-braised veal shank with saffron risotto & gremolata',                    price: '$24.99', model: 'Druidi.glb' },
+                    { name: 'Pompeii',   description: 'Wood-fired flatbread with San Marzano tomato, buffalo mozzarella & basil',   price: '$14.99', model: 'food.glb'   },
+                    { name: 'Galius',    description: 'Charcoal-grilled chicken thighs with roasted garlic, lemon & wild herbs',    price: '$16.99', model: 'Druidi.glb' },
                 ];
+                viewer.src = MENU[0].model || 'food.glb';
                 updateUI();
             });
     </script>

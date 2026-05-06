@@ -135,11 +135,11 @@
         const mod = i => ((i % N) + N) % N;
 
         const CFG = {
-            farLeft:  { x: -0.70, s: 0.20, opacity: 0    },
-            left:     { x: -0.28, s: 0.20, opacity: 0.35 },
-            center:   { x:  0,    s: 0.25, opacity: 1.0  },
-            right:    { x:  0.28, s: 0.20, opacity: 0.35 },
-            farRight: { x:  0.70, s: 0.20, opacity: 0    },
+            farLeft:  { x: -0.35, z: -0.12, s: 0.20, opacity: 0    },
+            left:     { x: -0.14, z: -0.08, s: 0.20, opacity: 0.35 },
+            center:   { x:  0,    z:  0,    s: 0.25, opacity: 1.0  },
+            right:    { x:  0.14, z: -0.08, s: 0.20, opacity: 0.35 },
+            farRight: { x:  0.35, z: -0.12, s: 0.20, opacity: 0    },
         };
 
         const INIT_ROLES       = ['left', 'center', 'right', 'farRight'];
@@ -206,6 +206,7 @@
             const initOpacities = [CFG.left.opacity, CFG.center.opacity, CFG.right.opacity, 0];
             INIT_ROLES.forEach((role, i) => {
                 slotGroups[i].position.x = CFG[role].x;
+                slotGroups[i].position.z = CFG[role].z;
                 slotGroups[i].scale.setScalar(CFG[role].s);
                 setOpacity(i, initOpacities[i]);
             });
@@ -237,17 +238,20 @@
         // ── Slot animation ────────────────────────────────────────────────────
         function snapSlot(idx, role) {
             slotGroups[idx].position.x = CFG[role].x;
+            slotGroups[idx].position.z = CFG[role].z;
             slotGroups[idx].scale.setScalar(CFG[role].s);
         }
 
         function animSlot(idx, role, dur) {
             const x0 = slotGroups[idx].position.x, x1 = CFG[role].x;
+            const z0 = slotGroups[idx].position.z, z1 = CFG[role].z;
             const s0 = slotGroups[idx].scale.x,    s1 = CFG[role].s;
             const t0 = performance.now();
             (function tick(now) {
                 const t = Math.min((now - t0) / dur, 1);
                 const e = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
                 slotGroups[idx].position.x = x0 + (x1 - x0) * e;
+                slotGroups[idx].position.z = z0 + (z1 - z0) * e;
                 slotGroups[idx].scale.setScalar(s0 + (s1 - s0) * e);
                 if (t < 1) requestAnimationFrame(tick);
             })(performance.now());
@@ -427,6 +431,7 @@
             const initOpacities = [CFG.left.opacity, CFG.center.opacity, CFG.right.opacity, 0];
             INIT_ROLES.forEach((role, i) => {
                 slotGroups[i].position.x = CFG[role].x;
+                slotGroups[i].position.z = CFG[role].z;
                 slotGroups[i].scale.setScalar(CFG[role].s);
                 setOpacity(i, initOpacities[i]);
             });
