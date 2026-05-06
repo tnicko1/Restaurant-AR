@@ -5,14 +5,107 @@
     <title>Premium AR Menu</title>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
-        body { margin: 0; background: #222; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
-        model-viewer { width: 90%; height: 70vh; background-color: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .ar-btn { background: #ff4757; color: white; border: none; padding: 15px 30px; border-radius: 30px; margin-top: 20px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .escape-hatch { margin-top: 15px; background: transparent; color: #aaa; border: 1px solid #555; padding: 10px 20px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #222;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            font-family: sans-serif;
+            padding-bottom: 24px;
+        }
+
+        model-viewer {
+            width: 90%;
+            height: 52vh;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-top: 16px;
+        }
+
+        /* ── Item info card ────────────────────────────────── */
+        #item-card {
+            width: 90%;
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 14px 18px;
+            margin-top: 12px;
+            color: white;
+        }
+        #item-counter {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        #item-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        #item-price {
+            font-size: 17px;
+            color: #FFD700;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        #item-description {
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.5;
+        }
+
+        /* ── Prev / Next navigation ────────────────────────── */
+        #nav-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 90%;
+            margin-top: 10px;
+            gap: 10px;
+        }
+        .nav-btn {
+            flex: 1;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 12px 0;
+            border-radius: 20px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .nav-btn:active { background: rgba(255,255,255,0.18); }
+
+        /* ── AR + escape buttons ───────────────────────────── */
+        .ar-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            margin-top: 14px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .escape-hatch {
+            margin-top: 10px;
+            background: transparent;
+            color: #aaa;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <model-viewer src="./food.glb"
+    <model-viewer id="viewer"
+                  src="./food.glb"
                   ar
                   ar-modes="webxr scene-viewer quick-look"
                   camera-controls
@@ -21,22 +114,72 @@
         <button slot="ar-button" class="ar-btn">View on Table</button>
     </model-viewer>
 
+    <!-- Item info card -->
+    <div id="item-card">
+        <div id="item-counter">1 / 1</div>
+        <div id="item-name">Loading…</div>
+        <div id="item-price"></div>
+        <div id="item-description"></div>
+    </div>
+
+    <!-- Prev / Next buttons -->
+    <div id="nav-row">
+        <button class="nav-btn" id="btn-prev">&#8592; Prev</button>
+        <button class="nav-btn" id="btn-next">Next &#8594;</button>
+    </div>
+
     <button class="escape-hatch" onclick="window.location.replace('mind-ar-fallback.html')">
         Camera not turning on? Click here.
     </button>
 
-    <button class="escape-hatch" style="bottom: 48px; right: 12px; color: #ff4757; border-color: #ff4757;"
+    <button class="escape-hatch" style="color: #ff4757; border-color: #ff4757;"
             onclick="window.location.href='ar-webxr.html'">
         &#9883; Try 3-Model WebXR (beta)
     </button>
 
     <script>
-        const viewer = document.querySelector('model-viewer');
-        viewer.addEventListener('ar-status', (e) => {
-            if (e.detail.status === 'failed') {
+        const viewer = document.getElementById('viewer');
+
+        viewer.addEventListener('ar-status', e => {
+            if (e.detail.status === 'failed')
                 window.location.replace('mind-ar-fallback.html');
-            }
         });
+
+        let MENU = [];
+        let current = 0;
+
+        function updateUI() {
+            const item = MENU[current];
+            if (!item) return;
+            document.getElementById('item-counter').textContent    = `${current + 1} / ${MENU.length}`;
+            document.getElementById('item-name').textContent        = item.name;
+            document.getElementById('item-price').textContent       = item.price;
+            document.getElementById('item-description').textContent = item.description;
+            viewer.setAttribute('src', item.model || 'food.glb');
+        }
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            current = ((current - 1) + MENU.length) % MENU.length;
+            updateUI();
+        });
+        document.getElementById('btn-next').addEventListener('click', () => {
+            current = (current + 1) % MENU.length;
+            updateUI();
+        });
+
+        fetch('./foods/menu.json')
+            .then(r => r.json())
+            .catch(() => null)
+            .then(data => {
+                MENU = data || [
+                    { name: 'Druidi',     description: 'Ancient grain bowl with roasted herbs, olive oil & spiced lamb',           price: '$18.99', model: 'Druidi.glb' },
+                    { name: 'Asteroidi',  description: 'Crispy meteor-shaped fritters with spiced chickpea filling & tahini drizzle', price: '$12.99', model: 'food.glb'   },
+                    { name: 'Iulius',     description: 'Slow-braised veal shank with saffron risotto & gremolata',                 price: '$24.99', model: 'Druidi.glb' },
+                    { name: 'Pompeii',    description: 'Wood-fired flatbread with San Marzano tomato, buffalo mozzarella & basil', price: '$14.99', model: 'food.glb'   },
+                    { name: 'Galius',     description: 'Charcoal-grilled chicken thighs with roasted garlic, lemon & wild herbs', price: '$16.99', model: 'Druidi.glb' },
+                ];
+                updateUI();
+            });
     </script>
 </body>
 </html>
