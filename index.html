@@ -1,26 +1,243 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Loading Menu...</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D AR Menu</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
-        body { 
-            background-color: #1a1a1a; 
-            color: white; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            font-family: sans-serif; 
-            margin: 0; 
+        :root {
+            --bg:     #1a1a1a;
+            --card:   #2a2a2a;
+            --text:   #ffffff;
+            --dim:    #b0b0b0;
+            --accent: #ffcc00;
         }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .menu-list {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 24px;
+        }
+        .menu-item {
+            background: var(--card);
+            border-radius: 20px;
+            display: flex;
+            padding: 15px;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .thumb-wrap {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            flex-shrink: 0;
+            cursor: pointer;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .thumb-wrap:hover { transform: scale(1.03); }
+        .thumb-wrap model-viewer {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            pointer-events: none;
+            display: block;
+        }
+        .item-details {
+            flex: 1;
+            cursor: pointer;
+            user-select: none;
+        }
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .item-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--accent);
+        }
+        .ar-btn {
+            background: var(--accent);
+            color: black;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .ar-btn:hover { transform: scale(1.05); }
+        .ingredients {
+            font-size: 0.85rem;
+            color: var(--dim);
+            margin: 0 0 10px;
+            line-height: 1.3;
+        }
+        .price {
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        /* Fullscreen modal */
+        #modal {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, #333 0%, #000 70%);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        #modal.active { opacity: 1; }
+        .modal-bar {
+            width: 95%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        #modal-title { font-size: 1.4rem; font-weight: 700; }
+        .close-btn {
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        #modal-viewer {
+            width: 95vw;
+            height: 80vh;
+            background: transparent;
+        }
+        .tip { margin-top: 10px; color: #999; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-    <h2>Loading 3D Menu...</h2>
+    <h1>Our Menu</h1>
+    <div class="menu-list" id="menu-list"></div>
+
+    <div id="modal">
+        <div class="modal-bar">
+            <div id="modal-title"></div>
+            <button class="close-btn" id="close-btn">&#x2715; Close</button>
+        </div>
+        <model-viewer id="modal-viewer"
+            camera-controls
+            auto-rotate
+            auto-rotate-delay="999999"
+            shadow-intensity="1">
+        </model-viewer>
+        <p class="tip">Drag to rotate</p>
+    </div>
 
     <script>
-        window.location.replace("advanced-ar.html");
+        const modal       = document.getElementById('modal');
+        const modalViewer = document.getElementById('modal-viewer');
+        const modalTitle  = document.getElementById('modal-title');
+
+        document.getElementById('close-btn').addEventListener('click', closeModal);
+        modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+        function closeModal() {
+            modal.classList.remove('active');
+            setTimeout(() => { modal.style.display = 'none'; }, 250);
+            document.body.style.overflow = '';
+        }
+
+        function openModal(src, name) {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+            modalViewer.src = src;
+            modalTitle.textContent = name;
+            document.body.style.overflow = 'hidden';
+        }
+
+        async function openAR(idx) {
+            let ok = false;
+            try { ok = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-ar')); } catch {}
+            location.href = ok ? `ar-webxr.html?item=${idx}` : `advanced-ar.html?item=${idx}`;
+        }
+
+        async function buildMenu() {
+            let items;
+            try {
+                const r = await fetch('./foods/menu.json');
+                items = await r.json();
+            } catch {
+                items = [
+                    { name: 'Druidi',    description: 'Ancient grain bowl with roasted herbs, olive oil & spiced lamb',              price: '$18.99', model: 'Druidi.glb' },
+                    { name: 'Asteroidi', description: 'Crispy meteor-shaped fritters with spiced chickpea filling & tahini drizzle', price: '$12.99', model: 'food.glb'   },
+                    { name: 'Iulius',    description: 'Slow-braised veal shank with saffron risotto & gremolata',                    price: '$24.99', model: 'Druidi.glb' },
+                    { name: 'Pompeii',   description: 'Wood-fired flatbread with San Marzano tomato, buffalo mozzarella & basil',   price: '$14.99', model: 'food.glb'   },
+                    { name: 'Galius',    description: 'Charcoal-grilled chicken thighs with roasted garlic, lemon & wild herbs',    price: '$16.99', model: 'Druidi.glb' },
+                ];
+            }
+
+            const list = document.getElementById('menu-list');
+            items.forEach((item, i) => {
+                const src = item.model || 'food.glb';
+
+                const card = document.createElement('div');
+                card.className = 'menu-item';
+                card.innerHTML = `
+                    <div class="thumb-wrap">
+                        <model-viewer src="${src}" auto-rotate shadow-intensity="1"></model-viewer>
+                    </div>
+                    <div class="item-details">
+                        <div class="item-header">
+                            <p class="item-name">${item.name}</p>
+                            <button class="ar-btn">VIEW IN AR</button>
+                        </div>
+                        <p class="ingredients">${item.description}</p>
+                        <p class="price">${item.price}</p>
+                    </div>`;
+
+                card.querySelector('.thumb-wrap').addEventListener('click', () => openModal(src, item.name));
+                card.querySelector('.ar-btn').addEventListener('click', e => { e.stopPropagation(); openAR(i); });
+                card.querySelector('.item-details').addEventListener('click', () => openAR(i));
+
+                list.appendChild(card);
+            });
+        }
+
+        buildMenu();
     </script>
 </body>
 </html>

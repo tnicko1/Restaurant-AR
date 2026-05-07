@@ -121,10 +121,12 @@
     </style>
 </head>
 <body>
+    <a href="index.html" style="position:fixed;top:14px;left:16px;z-index:50;color:#888;font-size:13px;text-decoration:none;font-family:sans-serif;">&#8592; Menu</a>
     <model-viewer id="viewer"
                   src=""
                   ar
                   ar-modes="webxr scene-viewer quick-look"
+                  ar-scale="fixed"
                   camera-controls
                   shadow-intensity="1"
                   auto-rotate>
@@ -137,13 +139,6 @@
         <button class="nav-btn" id="btn-next">&#8594;</button>
     </div>
 
-    <button class="escape-hatch" onclick="window.location.replace('mind-ar-fallback.html')">
-        Camera not turning on? Click here.
-    </button>
-    <button class="escape-hatch" style="color:#ff4757;border-color:#ff4757;"
-            onclick="window.location.href='ar-webxr.html'">
-        &#9883; Try 3-Model WebXR (beta)
-    </button>
 
     <!-- AR overlay — pointer-events:none keeps model fully tappable -->
     <div id="ar-overlay">
@@ -160,6 +155,10 @@
         let MENU    = [];
         let current = 0;
         let inAR    = false;
+
+        viewer.addEventListener('load', () => {
+            viewer.model?.scene?.scale.setScalar(0.2);
+        });
 
         function updateUI() {
             const item = MENU[current];
@@ -223,7 +222,7 @@
             } else if (s === 'failed') {
                 inAR = false;
                 overlay.classList.remove('active', 'labels-on');
-                window.location.replace('mind-ar-fallback.html');
+                window.location.replace('index.html');
             }
         });
 
@@ -239,7 +238,9 @@
                     { name: 'Pompeii',   description: 'Wood-fired flatbread with San Marzano tomato, buffalo mozzarella & basil',   price: '$14.99', model: 'food.glb'   },
                     { name: 'Galius',    description: 'Charcoal-grilled chicken thighs with roasted garlic, lemon & wild herbs',    price: '$16.99', model: 'Druidi.glb' },
                 ];
-                viewer.src = MENU[0].model || 'food.glb';
+                const urlItem = parseInt(new URLSearchParams(location.search).get('item'));
+                if (!isNaN(urlItem) && urlItem >= 0 && urlItem < MENU.length) current = urlItem;
+                viewer.src = MENU[current].model || 'food.glb';
                 updateUI();
             });
     </script>

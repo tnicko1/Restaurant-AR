@@ -68,7 +68,7 @@
 </head>
 <body>
 
-    <a class="back-link" href="advanced-ar.html">&#8592; Back</a>
+    <a class="back-link" href="index.html">&#8592; Menu</a>
 
     <div id="pre-ar">
         <h2>3-Model WebXR AR</h2>
@@ -136,9 +136,9 @@
 
         const CFG = {
             farLeft:  { x: -0.35, z: -0.12, s: 0.20, opacity: 0    },
-            left:     { x: -0.14, z: -0.08, s: 0.20, opacity: 0.35 },
+            left:     { x: -0.14, z: -0.08, s: 0.20, opacity: 0.65 },
             center:   { x:  0,    z:  0,    s: 0.25, opacity: 1.0  },
-            right:    { x:  0.14, z: -0.08, s: 0.20, opacity: 0.35 },
+            right:    { x:  0.14, z: -0.08, s: 0.20, opacity: 0.65 },
             farRight: { x:  0.35, z: -0.12, s: 0.20, opacity: 0    },
         };
 
@@ -195,13 +195,17 @@
             if (old) slotGroups[slotIdx].remove(old);
             const obj = cloneModel(menuIdx);
             if (obj) {
+                // Ground the model: offset Y so its base sits at y=0
+                const box = new THREE.Box3().setFromObject(obj);
+                if (isFinite(box.min.y)) obj.position.y = -box.min.y;
                 slotGroups[slotIdx].add(obj);
                 meshObjs[slotIdx] = obj;
             }
         }
 
         function initSlots() {
-            menuOf = [mod(-1), 0, 1, 2];
+            const c = currentCenterMenu;
+            menuOf = [mod(c - 1), c, mod(c + 1), mod(c + 2)];
             for (let i = 0; i < 4; i++) setSlotModel(i, menuOf[i]);
             const initOpacities = [CFG.left.opacity, CFG.center.opacity, CFG.right.opacity, 0];
             INIT_ROLES.forEach((role, i) => {
@@ -317,13 +321,13 @@
             const nameSprite = makeTextSprite([
                 { text: item.name, size: 52, color: '#FFFFFF', bold: true }
             ]);
-            nameSprite.position.set(0, 0.32, 0);
+            nameSprite.position.set(0, 0.40, 0);
 
             const infoSprite = makeTextSprite([
                 { text: item.price,       size: 42, color: '#FFD700', bold: true  },
                 { text: item.description, size: 28, color: '#CCCCCC', bold: false }
             ]);
-            infoSprite.position.set(0, -0.06, 0);
+            infoSprite.position.set(0, 0.26, 0);
 
             labelGroup.add(nameSprite);
             labelGroup.add(infoSprite);
@@ -479,6 +483,8 @@
 
         async function init() {
             await fetchMenu();
+            const urlItem = parseInt(new URLSearchParams(location.search).get('item'));
+            if (!isNaN(urlItem) && urlItem >= 0 && urlItem < N) currentCenterMenu = urlItem;
             try {
                 await preloadModels();
             } catch (e) {
