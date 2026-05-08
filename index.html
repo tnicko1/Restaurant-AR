@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Burger Lions</title>
+    <title>Burger Lions — AR Menu</title>
+    <meta name="description" content="Burger Lions restaurant menu. View dishes in Augmented Reality before you order.">
+    <meta property="og:title" content="Burger Lions — AR Menu">
+    <meta property="og:description" content="Browse our menu and place dishes on your table in Augmented Reality.">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
@@ -84,8 +87,6 @@
             max-width: 450px;
             text-align: center;
             padding: 4px 0 24px;
-            position: relative;
-            z-index: 1;
         }
 
         .header h1 {
@@ -116,7 +117,7 @@
             transition: color var(--t);
         }
 
-        /* ── Fixed corner buttons (theme + lang) ───────── */
+        /* ── Corner buttons ──────────────────────────────────────────── */
         #theme-toggle, #lang-toggle {
             position: fixed;
             top: 14px;
@@ -142,7 +143,7 @@
         #theme-toggle:active, #lang-toggle:active { transform: scale(0.93); }
         #toggle-icon { font-size: 15px; }
 
-        /* ── Menu list ───────────────────────────────────── */
+        /* ── Menu list ───────────────────────────────────────────────── */
         .menu-list {
             width: 100%;
             max-width: 450px;
@@ -174,6 +175,7 @@
             overflow: hidden;
             background: var(--thumb-bg);
             border: 1px solid var(--border);
+            cursor: pointer;
             transition: background var(--t), border-color var(--t);
         }
         .thumb-wrap model-viewer {
@@ -216,9 +218,10 @@
             white-space: nowrap;
             flex-shrink: 0;
             text-transform: uppercase;
-            transition: transform 0.15s, background var(--t), color var(--t);
+            transition: transform 0.15s, background var(--t), color var(--t), opacity 0.2s;
         }
         .ar-btn:active { transform: scale(0.93); }
+        .ar-btn:disabled { opacity: 0.6; cursor: wait; transform: none; }
 
         .ingredients {
             font-size: 0.8rem;
@@ -236,7 +239,7 @@
             transition: color var(--t);
         }
 
-        /* ── Fullscreen modal ────────────────────────────── */
+        /* ── Modal ───────────────────────────────────────────────────── */
         #modal {
             position: fixed;
             inset: 0;
@@ -331,13 +334,21 @@
             opacity: 0.6;
         }
 
-        /* ── WebXR overlay ───────────────────────────────── */
+        /* ── WebXR overlay ───────────────────────────────────────────── */
         #xr-overlay {
             display: none;
             position: fixed;
             inset: 0;
             z-index: 51;
             pointer-events: none;
+        }
+        /* Transparent fullscreen layer that captures drag/twist gestures
+           after placement. Sits behind all overlay buttons (DOM order). */
+        #xr-gesture-layer {
+            display: none;
+            position: absolute;
+            inset: 0;
+            pointer-events: all;
         }
         #xr-place-hint {
             position: absolute;
@@ -445,8 +456,6 @@
         </div>
         <model-viewer id="modal-viewer"
             camera-controls
-            auto-rotate
-            auto-rotate-delay="999999"
             shadow-intensity="1"
             min-camera-orbit="auto 0deg auto"
             max-camera-orbit="auto 90deg auto">
@@ -454,8 +463,10 @@
         <p class="tip" id="modal-tip">Drag to rotate</p>
     </div>
 
-    <!-- WebXR DOM overlay (must be in body for dom-overlay feature) -->
+    <!-- WebXR DOM overlay root — must be a direct body child for dom-overlay -->
     <div id="xr-overlay">
+        <!-- Gesture layer: first child = lowest z-order, catches background drags/twists -->
+        <div id="xr-gesture-layer"></div>
         <div id="xr-place-hint">Point at a flat surface, then tap to place</div>
         <div id="xr-nav-row">
             <button id="xr-prev">❮</button>
@@ -497,7 +508,7 @@
             new THREE.RingGeometry(0.04, 0.07, 32),
             new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
         );
-        reticle.rotation.x    = -Math.PI / 2;
+        reticle.rotation.x       = -Math.PI / 2;
         reticle.matrixAutoUpdate = false;
         reticle.visible          = false;
         scene.add(reticle);
@@ -534,7 +545,7 @@
         const DUR             = 350;
         const meshObjs        = [null, null, null, null];
 
-        // ── Model cache & loader ───────────────────────────────────────
+        // ── Model cache ────────────────────────────────────────────────
         const modelGLTFs = {};
         const loader     = new GLTFLoader();
 
@@ -576,6 +587,7 @@
                 slotGroups[i].position.x = CFG[role].x;
                 slotGroups[i].position.z = CFG[role].z;
                 slotGroups[i].scale.setScalar(CFG[role].s);
+                slotGroups[i].rotation.set(0, 0, 0);
                 setOpacity(i, opacities[i]);
             });
         }
@@ -625,7 +637,7 @@
             })(performance.now());
         }
 
-        // ── Ground label (flat on table, bottom edge faces camera) ─────
+        // ── Ground label (flat on table surface, bottom edge toward camera) ─
         const groundLabelGeo = new THREE.PlaneGeometry(0.42, 0.10);
         const groundLabelMat = new THREE.MeshBasicMaterial({
             transparent: true,
@@ -651,14 +663,14 @@
             const lang = window.__lang || 'en';
             const name = (lang === 'ka' && item.name_ka) ? item.name_ka : item.name;
 
-            ctx.font        = 'bold 88px sans-serif';
+            ctx.font        = "88px 'Bebas Neue', sans-serif";
             ctx.lineWidth   = 10;
             ctx.strokeStyle = 'rgba(0,0,0,0.95)';
             ctx.strokeText(name, W / 2, H * 0.36);
             ctx.fillStyle = '#ffffff';
             ctx.fillText(name, W / 2, H * 0.36);
 
-            ctx.font        = 'bold 64px sans-serif';
+            ctx.font        = "bold 64px 'Nunito', sans-serif";
             ctx.lineWidth   = 8;
             ctx.strokeStyle = 'rgba(0,0,0,0.95)';
             ctx.strokeText(item.price, W / 2, H * 0.72);
@@ -673,11 +685,10 @@
         function refreshGroundLabel() {
             const item = MENU[currentCenterMenu];
             if (!item) return;
-            groundLabelMat.map          = buildLabelTexture(item);
-            groundLabelMat.needsUpdate  = true;
+            groundLabelMat.map         = buildLabelTexture(item);
+            groundLabelMat.needsUpdate = true;
         }
 
-        // Called every frame — keep label flat on table, bottom edge toward camera
         function updateGroundLabelTransform() {
             if (!groundLabel.visible || !placed) return;
             const dx    = camera.position.x - carouselRoot.position.x;
@@ -703,8 +714,8 @@
 
         function goNext() {
             if (isAnimating) return;
-            isAnimating              = true;
-            groundLabel.visible      = false;
+            isAnimating         = true;
+            groundLabel.visible = false;
             const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
             if (hiddenSide === 'farLeft') snapSlot(hIdx, 'farRight');
             menuOf[hIdx] = mod(menuOf[rIdx] + 1);
@@ -753,19 +764,24 @@
             }, DUR + 10);
         }
 
-        // ── Touch gestures (on canvas only — no catalog scroll conflict) ─
+        // ── Touch gestures ─────────────────────────────────────────────
+        // Listeners are on the gesture layer (inside dom-overlay), NOT the canvas.
+        // During WebXR, touch events on the canvas are consumed by the XR runtime
+        // and converted to XR select events. Dom-overlay elements intercept touches
+        // as normal HTML events, bypassing the XR runtime. The gesture layer is
+        // shown only after placement, so pre-placement taps still reach the XR
+        // runtime and fire select events correctly.
         const MOVE_SCALE    = 0.003;
         const ROTATE_SCALE  = 0.010;
         const activeTouches = new Map();
+        const gestureLayer  = document.getElementById('xr-gesture-layer');
 
-        xrCanvas.addEventListener('touchstart', e => {
-            if (!placed) return;
+        gestureLayer.addEventListener('touchstart', e => {
             for (const t of e.changedTouches)
                 activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY, prevX: t.clientX, prevY: t.clientY });
         }, { passive: true });
 
-        xrCanvas.addEventListener('touchmove', e => {
-            if (!placed) return;
+        gestureLayer.addEventListener('touchmove', e => {
             e.preventDefault();
             for (const t of e.changedTouches) {
                 const p = activeTouches.get(t.identifier);
@@ -782,7 +798,7 @@
             }
         }, { passive: false });
 
-        xrCanvas.addEventListener('touchend', e => {
+        gestureLayer.addEventListener('touchend', e => {
             for (const t of e.changedTouches) activeTouches.delete(t.identifier);
         }, { passive: true });
 
@@ -806,19 +822,21 @@
             placed        = false;
             xrSession     = null;
             xrStarting    = false;
-            carouselRoot.visible = false;
-            reticle.visible      = false;
-            groundLabel.visible  = false;
-            xrCanvas.style.display    = 'none';
-            xrOverlay.style.display   = 'none';
+            carouselRoot.visible  = false;
+            reticle.visible       = false;
+            groundLabel.visible   = false;
+            xrCanvas.style.display       = 'none';
+            xrOverlay.style.display      = 'none';
+            gestureLayer.style.display   = 'none';
             document.getElementById('xr-place-hint').style.display = 'block';
             document.getElementById('xr-nav-row').style.display    = 'none';
             document.getElementById('xr-move-hint').style.display  = 'none';
             activeTouches.clear();
-            slotOf     = { left: 0, center: 1, right: 2, hidden: 3 };
-            hiddenSide = 'farRight';
+            slotOf      = { left: 0, center: 1, right: 2, hidden: 3 };
+            hiddenSide  = 'farRight';
             isAnimating = false;
             initSlots();
+            document.dispatchEvent(new CustomEvent('xr-session-end'));
         });
 
         renderer.setAnimationLoop((time, frame) => {
@@ -845,22 +863,23 @@
             if (placed || !reticle.visible) return;
             carouselRoot.position.setFromMatrixPosition(reticle.matrix);
             carouselRoot.quaternion.setFromRotationMatrix(reticle.matrix);
-            carouselRoot.visible = true;
-            reticle.visible      = false;
-            placed               = true;
+            carouselRoot.visible     = true;
+            reticle.visible          = false;
+            placed                   = true;
+            gestureLayer.style.display = 'block';
             refreshGroundLabel();
-            groundLabel.visible  = true;
+            groundLabel.visible = true;
             document.getElementById('xr-place-hint').style.display = 'none';
             document.getElementById('xr-nav-row').style.display    = 'flex';
             document.getElementById('xr-move-hint').style.display  = 'block';
         }
 
-        // ── Overlay controls ───────────────────────────────────────────
+        // ── Overlay buttons ────────────────────────────────────────────
         document.getElementById('xr-exit').addEventListener('click', () => xrSession?.end());
         document.getElementById('xr-prev').addEventListener('click', goPrev);
         document.getElementById('xr-next').addEventListener('click', goNext);
 
-        // ── Public API — called directly from catalog's openAR() ───────
+        // ── Public API ─────────────────────────────────────────────────
         let xrStarting = false;
 
         window.XR = {
@@ -871,6 +890,9 @@
                 MENU = items;
                 N    = MENU.length;
                 currentCenterMenu = Math.max(0, Math.min(itemIndex, N - 1));
+
+                // Ensure web fonts are rendered in canvas textures
+                await document.fonts.ready;
 
                 try { await preloadModels(); }
                 catch (e) { console.warn('Model preload partial failure:', e); }
@@ -887,6 +909,7 @@
                 } catch (e) {
                     console.error('XR session failed:', e);
                     xrStarting = false;
+                    document.dispatchEvent(new CustomEvent('xr-session-end'));
                     return;
                 }
 
@@ -894,6 +917,7 @@
                 await renderer.xr.setSession(xrSession);
                 xrCanvas.style.display  = 'block';
                 xrOverlay.style.display = 'block';
+                document.dispatchEvent(new CustomEvent('xr-session-start'));
             }
         };
     </script>
@@ -903,9 +927,10 @@
         // ── UI strings ─────────────────────────────────────────────────
         const UI = {
             en: {
-                tagline:   '🦁   Taste the Wild   🦁',
+                tagline:   '🦁   Taste the Wild   🦁',
                 viewAR:    'VIEW ON TABLE',
                 view3D:    'VIEW IN 3D',
+                loading:   'Loading…',
                 close:     '✕ Close',
                 tip:       'Drag to rotate',
                 placeHint: 'Point at a flat surface, then tap to place',
@@ -914,9 +939,10 @@
                 langBtn:   'ქA',
             },
             ka: {
-                tagline:   '🦁   გემო ველისა   🦁',
+                tagline:   '🦁   გემო ველისა   🦁',
                 viewAR:    'ᲛᲐᲒᲘᲓᲐᲖᲔ ᲜᲐᲮᲕᲐ',
                 view3D:    '3D-ში ᲜᲐᲮᲕᲐ',
+                loading:   'იტვირთება…',
                 close:     '✕ დახურვა',
                 tip:       'სანახავად გადაათრიე',
                 placeHint: 'მიანიშნე ბრტყელ ზედაპირზე, შემდეგ შეეხე',
@@ -938,15 +964,15 @@
             window.__lang = lang;
             localStorage.setItem('bl-lang', lang);
             const u = UI[lang];
-            document.getElementById('tagline').innerHTML        = u.tagline;
-            document.getElementById('lang-toggle').textContent  = u.langBtn;
-            document.getElementById('close-btn').textContent    = u.close;
-            document.getElementById('modal-tip').textContent    = u.tip;
+            document.getElementById('tagline').innerHTML         = u.tagline;
+            document.getElementById('lang-toggle').textContent   = u.langBtn;
+            document.getElementById('close-btn').textContent     = u.close;
+            document.getElementById('modal-tip').textContent     = u.tip;
             document.getElementById('xr-place-hint').textContent = u.placeHint;
             document.getElementById('xr-move-hint').textContent  = u.moveHint;
             document.getElementById('xr-exit').textContent       = u.exitAR;
             const btnText = window.__arCap === 'none' ? u.view3D : u.viewAR;
-            document.querySelectorAll('.ar-btn').forEach(b => { b.textContent = btnText; });
+            document.querySelectorAll('.ar-btn:not(:disabled)').forEach(b => { b.textContent = btnText; });
             document.querySelectorAll('[data-field][data-idx]').forEach(el => {
                 const item = menuItems[parseInt(el.dataset.idx)];
                 if (item) el.textContent = t(item, el.dataset.field);
@@ -972,6 +998,19 @@
         applyTheme(localStorage.getItem('bl-theme') || 'night');
         toggleBtn.addEventListener('click', () => {
             applyTheme(html.getAttribute('data-theme') === 'night' ? 'day' : 'night');
+        });
+
+        // ── XR session events — hide catalog chrome during AR ──────────
+        document.addEventListener('xr-session-start', () => {
+            document.getElementById('theme-toggle').style.display = 'none';
+            document.getElementById('lang-toggle').style.display  = 'none';
+        });
+
+        document.addEventListener('xr-session-end', () => {
+            _arOpening = false;
+            setARButtonsState(false);
+            document.getElementById('theme-toggle').style.display = '';
+            document.getElementById('lang-toggle').style.display  = '';
         });
 
         // ── Modal ──────────────────────────────────────────────────────
@@ -1042,24 +1081,53 @@
             setTimeout(() => tmp.remove(), 5000);
         }
 
-        // ── AR routing — 3-branch, no dead code ───────────────────────
+        // ── AR button loading state ────────────────────────────────────
+        function setARButtonsState(loading) {
+            const u = UI[window.__lang];
+            const label = loading ? u.loading : (window.__arCap === 'none' ? u.view3D : u.viewAR);
+            document.querySelectorAll('.ar-btn').forEach(b => {
+                b.textContent = label;
+                b.disabled    = loading;
+            });
+        }
+
+        // ── AR routing ─────────────────────────────────────────────────
         let _arOpening = false;
+
         async function openAR(idx) {
             if (_arOpening) return;
             _arOpening = true;
-            try {
-                const cap  = window.__arCap ?? await detectAR();
-                const item = menuItems[idx];
-                if (!item) return;
-                if (cap === 'webxr') {
-                    if (window.XR) await window.XR.start(idx, menuItems);
-                    else openModal(idx);
-                } else if (cap === 'arkit') {
-                    activateARDirectly(item.model || 'food.glb');
+            setARButtonsState(true);
+
+            const cap  = window.__arCap ?? await detectAR();
+            const item = menuItems[idx];
+
+            if (!item) {
+                setARButtonsState(false);
+                _arOpening = false;
+                return;
+            }
+
+            if (cap === 'webxr') {
+                // Button state and _arOpening are restored by the xr-session-end event.
+                // If XR.start() fails, it dispatches xr-session-end itself.
+                if (window.XR) {
+                    await window.XR.start(idx, menuItems);
                 } else {
                     openModal(idx);
+                    setARButtonsState(false);
+                    _arOpening = false;
                 }
-            } finally {
+            } else if (cap === 'arkit') {
+                activateARDirectly(item.model || 'food.glb');
+                // Quick Look opens as a system layer — restore buttons once it's open
+                setTimeout(() => {
+                    setARButtonsState(false);
+                    _arOpening = false;
+                }, 2500);
+            } else {
+                openModal(idx);
+                setARButtonsState(false);
                 _arOpening = false;
             }
         }
@@ -1089,7 +1157,7 @@
                 card.innerHTML = `
                     <div class="thumb-wrap">
                         <model-viewer src="${item.model || 'food.glb'}"
-                            camera-controls auto-rotate auto-rotate-delay="999999"
+                            camera-controls auto-rotate auto-rotate-delay="2000"
                             shadow-intensity="1"
                             min-camera-orbit="auto 0deg auto"
                             max-camera-orbit="auto 90deg auto">
@@ -1104,22 +1172,26 @@
                         <p class="price">${item.price}</p>
                     </div>`;
 
+                // Thumbnail tap → 3D preview modal; drag → rotate (handled by model-viewer)
                 const mv = card.querySelector('model-viewer');
                 mv.addEventListener('pointerdown', e => { _dragStartX = e.clientX; _dragStartY = e.clientY; });
                 mv.addEventListener('pointerup',   e => {
                     if (Math.abs(e.clientX - _dragStartX) < 5 && Math.abs(e.clientY - _dragStartY) < 5)
                         openModal(i);
                 });
+
+                // Text area tap → 3D preview modal; AR button → AR/3D based on capability
+                card.querySelector('.item-details').addEventListener('click', () => openModal(i));
                 card.querySelector('.ar-btn').addEventListener('click', e => { e.stopPropagation(); openAR(i); });
-                card.querySelector('.item-details').addEventListener('click', () => openAR(i));
+
                 list.appendChild(card);
             });
 
-            // Detect AR capability then update button text
             detectAR().then(cap => {
                 const u = UI[window.__lang];
-                const btnText = cap === 'none' ? u.view3D : u.viewAR;
-                document.querySelectorAll('.ar-btn').forEach(b => { b.textContent = btnText; });
+                document.querySelectorAll('.ar-btn').forEach(b => {
+                    b.textContent = cap === 'none' ? u.view3D : u.viewAR;
+                });
             });
 
             applyLang(window.__lang);

@@ -1,20 +1,53 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Burger Lions — AR Menu
 
-# Run and deploy your AI Studio app
+A WebAR restaurant menu. Customers browse 3D food models and place them on their table in Augmented Reality — no app download required.
 
-This contains everything you need to run your app locally.
+## Live
 
-View your app in AI Studio: https://ai.studio/apps/957efad7-9fb1-4302-955b-95d1be8c400c
+**[TEMOtkesh.github.io/Restaurant-AR](https://TEMOtkesh.github.io/Restaurant-AR/)**
 
-## Run Locally
+## How it works
 
-**Prerequisites:**  Node.js
+| Platform | Tap "VIEW ON TABLE" |
+|---|---|
+| Android (Chrome + ARCore) | Three.js WebXR carousel — hit-test placement, drag to move, twist to rotate |
+| iOS (Safari) | ARKit Quick Look via model-viewer `activateAR()` |
+| Everything else | "VIEW IN 3D" — fullscreen model-viewer modal |
 
+Thumbnail tap opens the fullscreen 3D preview on all platforms.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Development
+
+```bash
+npm install
+npm run dev   # http://localhost:3000
+```
+
+No build step. Pure static files.
+
+## Menu data
+
+Edit `foods/menu.json` to add, remove, or update items:
+
+```json
+{
+  "name": "Druidi",
+  "name_ka": "დრუიდი",
+  "description": "Ancient grain bowl with roasted herbs...",
+  "description_ka": "ძველი მარცვლეულის თასი...",
+  "price": "$18.99",
+  "model": "Druidi.glb"
+}
+```
+
+Place GLB model files in the project root. Update the `"model"` field to point to the new file.
+
+## Adding a new dish
+
+1. Add the GLB file to the project root (or a subfolder)
+2. Add an entry to `foods/menu.json` with `name`, `name_ka`, `description`, `description_ka`, `price`, `model`
+3. Commit and push — GitHub Pages deploys automatically
+
+## Languages
+
+Georgian / English toggle (top-left button). Selection persists via `localStorage`.
