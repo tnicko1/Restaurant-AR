@@ -185,7 +185,7 @@
             display: block;
         }
 
-        .item-details { flex: 1; user-select: none; }
+        .item-details { flex: 1; min-width: 0; user-select: none; }
 
         .item-header {
             display: flex;
@@ -202,6 +202,8 @@
             color: var(--accent);
             line-height: 1.1;
             transition: color var(--t);
+            overflow-wrap: break-word;
+            min-width: 0;
         }
 
         .ar-btn {
@@ -229,6 +231,7 @@
             margin-bottom: 7px;
             line-height: 1.45;
             transition: color var(--t);
+            overflow-wrap: break-word;
         }
 
         .price {
@@ -771,8 +774,10 @@
         // as normal HTML events, bypassing the XR runtime. The gesture layer is
         // shown only after placement, so pre-placement taps still reach the XR
         // runtime and fire select events correctly.
-        const MOVE_SCALE    = 0.003;
-        const ROTATE_SCALE  = 0.010;
+        const MOVE_SCALE    = 0.0015;
+        const ROTATE_SCALE  = 0.005;
+        const DEAD_ZONE     = 3;
+        const MAX_DELTA     = 40;
         const activeTouches = new Map();
         const gestureLayer  = document.getElementById('xr-gesture-layer');
 
@@ -789,11 +794,18 @@
             }
             const all = [...activeTouches.values()];
             if (all.length === 1) {
-                carouselRoot.position.x += (all[0].x - all[0].prevX) * MOVE_SCALE;
-                carouselRoot.position.z += (all[0].y - all[0].prevY) * MOVE_SCALE;
+                let dx = all[0].x - all[0].prevX;
+                let dy = all[0].y - all[0].prevY;
+                if (Math.abs(dx) < DEAD_ZONE && Math.abs(dy) < DEAD_ZONE) return;
+                dx = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, dx));
+                dy = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, dy));
+                carouselRoot.position.x += dx * MOVE_SCALE;
+                carouselRoot.position.z += dy * MOVE_SCALE;
             } else if (all.length >= 2) {
                 const [left, right] = [...all].sort((a, b) => a.x - b.x);
-                const twist = ((right.y - right.prevY) - (left.y - left.prevY)) * 0.5;
+                let twist = ((right.y - right.prevY) - (left.y - left.prevY)) * 0.5;
+                if (Math.abs(twist) < DEAD_ZONE) return;
+                twist = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, twist));
                 slotGroups[slotOf.center].rotation.y -= twist * ROTATE_SCALE;
             }
         }, { passive: false });
@@ -909,7 +921,7 @@
                 } catch (e) {
                     console.error('XR session failed:', e);
                     xrStarting = false;
-                    document.dispatchEvent(new CustomEvent('xr-session-end'));
+                    document.dispatchEvent(new CustomEvent('xr-session-end', { detail: { fallbackIdx: itemIndex } }));
                     return;
                 }
 
@@ -1006,11 +1018,13 @@
             document.getElementById('lang-toggle').style.display  = 'none';
         });
 
-        document.addEventListener('xr-session-end', () => {
+        document.addEventListener('xr-session-end', e => {
             _arOpening = false;
             setARButtonsState(false);
             document.getElementById('theme-toggle').style.display = '';
             document.getElementById('lang-toggle').style.display  = '';
+            // If session failed to start (non-ARCore device), fall back to 3D modal
+            if (e.detail?.fallbackIdx != null) openModal(e.detail.fallbackIdx);
         });
 
         // ── Modal ──────────────────────────────────────────────────────
@@ -1133,7 +1147,15 @@
         }
 
         // ── Build menu ─────────────────────────────────────────────────
-        let _dragStartX = 0, _dragStartY = 0;
+        const thumbObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const mv = entry.target;
+                    if (!mv.src) mv.src = mv.dataset.src;
+                    thumbObserver.unobserve(mv);
+                }
+            });
+        }, { rootMargin: '200px' });
 
         async function buildMenu() {
             let items;
@@ -1154,11 +1176,12 @@
             items.forEach((item, i) => {
                 const card = document.createElement('div');
                 card.className = 'menu-item';
+                const modelSrc = item.model || 'food.glb';
                 card.innerHTML = `
                     <div class="thumb-wrap">
-                        <model-viewer src="${item.model || 'food.glb'}"
-                            camera-controls auto-rotate auto-rotate-delay="2000"
-                            shadow-intensity="1"
+                        <model-viewer
+                            data-src="${modelSrc}"
+                            shadow-intensity="0.6"
                             min-camera-orbit="auto 0deg auto"
                             max-camera-orbit="auto 90deg auto">
                         </model-viewer>
@@ -1172,13 +1195,10 @@
                         <p class="price">${item.price}</p>
                     </div>`;
 
-                // Thumbnail tap → 3D preview modal; drag → rotate (handled by model-viewer)
+                // Thumbnail tap → 3D preview modal; lazy-load src when scrolled into view
                 const mv = card.querySelector('model-viewer');
-                mv.addEventListener('pointerdown', e => { _dragStartX = e.clientX; _dragStartY = e.clientY; });
-                mv.addEventListener('pointerup',   e => {
-                    if (Math.abs(e.clientX - _dragStartX) < 5 && Math.abs(e.clientY - _dragStartY) < 5)
-                        openModal(i);
-                });
+                thumbObserver.observe(mv);
+                mv.addEventListener('click', () => openModal(i));
 
                 // Text area tap → 3D preview modal; AR button → AR/3D based on capability
                 card.querySelector('.item-details').addEventListener('click', () => openModal(i));
