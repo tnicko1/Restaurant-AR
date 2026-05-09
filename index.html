@@ -1067,19 +1067,37 @@
         }
 
         // ── Build menu ─────────────────────────────────────────────────
-        // Keep observing after load so thumbnails are unloaded when scrolled off,
-        // freeing WebGL contexts across the 32-item list.
+        // Staggered thumbnail loader — first item loads immediately, then one every
+        // 150ms to avoid competing WebGL context inits on page load.
+        const _thumbQueue = [];
+        let _thumbTimer = null;
+
+        function _drainThumbs() {
+            _thumbTimer = null;
+            if (_thumbQueue.length === 0) return;
+            const mv = _thumbQueue.shift();
+            if (mv.isConnected && !mv.src) mv.src = mv.dataset.src;
+            if (_thumbQueue.length > 0) _thumbTimer = setTimeout(_drainThumbs, 150);
+        }
+
+        function _scheduleThumb(mv) {
+            if (_thumbQueue.includes(mv)) return;
+            _thumbQueue.push(mv);
+            if (!_thumbTimer) _thumbTimer = setTimeout(_drainThumbs, 0);
+        }
+
         const thumbObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
                 const mv = entry.target;
                 if (entry.isIntersecting) {
-                    if (!mv.src) mv.src = mv.dataset.src;
+                    _scheduleThumb(mv);
                 } else {
-                    // Only unload if not held by modal pause
+                    const qi = _thumbQueue.indexOf(mv);
+                    if (qi !== -1) _thumbQueue.splice(qi, 1);
                     if (!mv.dataset.pausedSrc) mv.removeAttribute('src');
                 }
             });
-        }, { rootMargin: '150px' });
+        }, { rootMargin: '100px' });
 
         async function buildMenu() {
             const fallback = [
@@ -1090,13 +1108,16 @@
                 { name: 'Galius',    name_ka: 'გალიუსი',   category: 'Desserts', category_ka: 'დესერტები', description: 'Charcoal-grilled chicken with roasted garlic & wild herbs',                 description_ka: 'ნახშირზე შემწვარი წიწილა შებრაწული ნიორითა და ველური მწვანილებით',                                      price: '$16.99', model: 'Druidi.glb' },
             ];
 
-            const [cap, items] = await Promise.all([
-                detectAR(),
-                fetch('./foods/menu.json').then(r => r.json()).catch(() => fallback)
-            ]);
+            // Read cached AR cap synchronously so first render uses correct label if known
+            const cachedCap = localStorage.getItem('bl-ar-cap');
+            if (cachedCap) window.__arCap = cachedCap;
+            // Start detection in background — don't block menu render on it
+            const arCapPromise = detectAR();
 
-            const arLabel = cap === 'none' ? UI[window.__lang].view3D : UI[window.__lang].viewAR;
+            const items = await fetch('./foods/menu.json').then(r => r.json()).catch(() => fallback);
             menuItems = items;
+
+            const initialLabel = window.__arCap === 'none' ? UI[window.__lang].view3D : UI[window.__lang].viewAR;
 
             // Group by category, preserving order from JSON
             const categories = [];
@@ -1139,7 +1160,7 @@
                         <div class="item-details">
                             <div class="item-header">
                                 <p class="item-name" data-field="name" data-idx="${globalIdx}">${t(item, 'name')}</p>
-                                <button class="ar-btn">${arLabel}</button>
+                                <button class="ar-btn">${initialLabel}</button>
                             </div>
                             <p class="ingredients" data-field="description" data-idx="${globalIdx}">${t(item, 'description')}</p>
                             <p class="price">${item.price}</p>
@@ -1163,6 +1184,14 @@
             });
 
             applyLang(window.__lang);
+
+            // Correct button labels once AR detection resolves (instant if cap was cached)
+            arCapPromise.then(() => {
+                const u = UI[window.__lang];
+                const finalLabel = window.__arCap === 'none' ? u.view3D : u.viewAR;
+                if (finalLabel !== initialLabel)
+                    document.querySelectorAll('.ar-btn:not(:disabled)').forEach(b => { b.textContent = finalLabel; });
+            });
         }
 
         buildMenu();
