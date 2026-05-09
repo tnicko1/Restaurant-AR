@@ -821,12 +821,14 @@
                     console.error('XR session failed:', e);
                     xrStarting = false;
                     window.__arCap = 'none';
+                    localStorage.setItem('bl-ar-cap', 'none');
                     document.dispatchEvent(new CustomEvent('xr-session-end', { detail: { fallbackIdx: itemIndex } }));
                     return;
                 }
 
                 xrSession.addEventListener('select', onSelect);
                 await renderer.xr.setSession(xrSession);
+                localStorage.setItem('bl-ar-cap', 'webxr');
                 xrCanvas.style.display  = 'block';
                 xrOverlay.style.display = 'block';
                 document.dispatchEvent(new CustomEvent('xr-session-start'));
@@ -961,6 +963,10 @@
         function openModal(idx) {
             modalIndex = idx;
             updateModal();
+            // Free thumbnail WebGL contexts so the modal gets the full GPU budget
+            document.querySelectorAll('.thumb-wrap model-viewer').forEach(mv => {
+                if (mv.src) { mv.dataset.pausedSrc = mv.src; mv.removeAttribute('src'); }
+            });
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('active'), 10);
             document.body.style.overflow = 'hidden';
@@ -968,12 +974,24 @@
 
         function closeModal() {
             modal.classList.remove('active');
-            setTimeout(() => { modal.style.display = 'none'; }, 200);
+            setTimeout(() => {
+                modal.style.display = 'none';
+                // Restore thumbnail model-viewers after modal is hidden
+                document.querySelectorAll('.thumb-wrap model-viewer').forEach(mv => {
+                    if (mv.dataset.pausedSrc) { mv.src = mv.dataset.pausedSrc; delete mv.dataset.pausedSrc; }
+                });
+            }, 200);
             document.body.style.overflow = '';
         }
 
         // ── AR capability detection ────────────────────────────────────
         async function detectAR() {
+            // Use cached result if this device's capability was confirmed previously.
+            // 'webxr' is NOT cached until a session actually succeeds (isSessionSupported
+            // returns true on some non-whitelisted Androids that can't start a session).
+            const cached = localStorage.getItem('bl-ar-cap');
+            if (cached) { window.__arCap = cached; return cached; }
+
             const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
                           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             let cap = 'none';
@@ -984,6 +1002,8 @@
             }
             if (cap === 'none' && isIOS) cap = 'arkit';
             window.__arCap = cap;
+            // Cache confirmed-false states immediately; 'webxr' cached only after a real session succeeds
+            if (cap !== 'webxr') localStorage.setItem('bl-ar-cap', cap);
             return cap;
         }
 
