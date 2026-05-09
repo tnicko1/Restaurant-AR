@@ -1047,18 +1047,22 @@
         }, { rootMargin: '150px' });
 
         async function buildMenu() {
-            let items;
-            try {
-                items = await fetch('./foods/menu.json').then(r => r.json());
-            } catch {
-                items = [
-                    { name: 'Druidi',    name_ka: 'დრუიდი',    description: 'Ancient grain bowl with roasted herbs, olive oil & spiced lamb',                description_ka: 'ძველი მარცვლეულის თასი შებრაწული მწვანილებით, ზეთისხილის ზეთითა და სანელებლებიანი ბატკნის ხორცით', price: '$18.99', model: 'Druidi.glb' },
-                    { name: 'Asteroidi', name_ka: 'ასტეროიდი', description: 'Crispy meteor-shaped fritters with spiced chickpea filling & tahini drizzle',   description_ka: 'ხრაშუნა კვერები სანელებლებიანი ბლის შიგთავსით და ტაჰინის სოუსით',                                              price: '$12.99', model: 'food.glb'   },
-                    { name: 'Iulius',    name_ka: 'იულიუსი',   description: 'Slow-braised veal shank with saffron risotto & gremolata',                      description_ka: 'ნელა გახარშული ხბოს ბარკლი შაფრანის რიზოტოთი და გრემოლატათი',                                             price: '$24.99', model: 'Druidi.glb' },
-                    { name: 'Pompeii',   name_ka: 'პომპეი',    description: 'Wood-fired flatbread with San Marzano tomato, buffalo mozzarella & fresh basil', description_ka: 'შეშის ღუმელში გამომცხვარი პიძა სან-მარძანოს პომიდვრით, კამეჩის მოცარელათი და ახალი ბაზილიკოთი', price: '$14.99', model: 'food.glb'   },
-                    { name: 'Galius',    name_ka: 'გალიუსი',   description: 'Charcoal-grilled chicken thighs with roasted garlic, lemon & wild herbs',       description_ka: 'ნახშირზე შემწვარი წიწილის ბარძაყი შებრაწული ნიორით, ლიმონითა და ველური მწვანილებით',                     price: '$16.99', model: 'Druidi.glb' },
-                ];
-            }
+            const fallback = [
+                { name: 'Druidi',    name_ka: 'დრუიდი',    description: 'Ancient grain bowl with roasted herbs, olive oil & spiced lamb',                description_ka: 'ძველი მარცვლეულის თასი შებრაწული მწვანილებით, ზეთისხილის ზეთითა და სანელებლებიანი ბატკნის ხორცით', price: '$18.99', model: 'Druidi.glb' },
+                { name: 'Asteroidi', name_ka: 'ასტეროიდი', description: 'Crispy meteor-shaped fritters with spiced chickpea filling & tahini drizzle',   description_ka: 'ხრაშუნა კვერები სანელებლებიანი ბლის შიგთავსით და ტაჰინის სოუსით',                                              price: '$12.99', model: 'food.glb'   },
+                { name: 'Iulius',    name_ka: 'იულიუსი',   description: 'Slow-braised veal shank with saffron risotto & gremolata',                      description_ka: 'ნელა გახარშული ხბოს ბარკლი შაფრანის რიზოტოთი და გრემოლატათი',                                             price: '$24.99', model: 'Druidi.glb' },
+                { name: 'Pompeii',   name_ka: 'პომპეი',    description: 'Wood-fired flatbread with San Marzano tomato, buffalo mozzarella & fresh basil', description_ka: 'შეშის ღუმელში გამომცხვარი პიძა სან-მარძანოს პომიდვრით, კამეჩის მოცარელათი და ახალი ბაზილიკოთი', price: '$14.99', model: 'food.glb'   },
+                { name: 'Galius',    name_ka: 'გალიუსი',   description: 'Charcoal-grilled chicken thighs with roasted garlic, lemon & wild herbs',       description_ka: 'ნახშირზე შემწვარი წიწილის ბარძაყი შებრაწული ნიორით, ლიმონითა და ველური მწვანილებით',                     price: '$16.99', model: 'Druidi.glb' },
+            ];
+
+            // Run AR detection and menu fetch in parallel so the button label
+            // is already correct when cards are first rendered — no label swap.
+            const [cap, items] = await Promise.all([
+                detectAR(),
+                fetch('./foods/menu.json').then(r => r.json()).catch(() => fallback)
+            ]);
+
+            const arLabel = cap === 'none' ? UI[window.__lang].view3D : UI[window.__lang].viewAR;
             menuItems = items;
 
             const list = document.getElementById('menu-list');
@@ -1069,7 +1073,8 @@
                     <div class="thumb-wrap">
                         <model-viewer
                             data-src="${item.model || 'food.glb'}"
-                            shadow-intensity="0"
+                            camera-controls
+                            shadow-intensity="0.5"
                             min-camera-orbit="auto 0deg auto"
                             max-camera-orbit="auto 90deg auto">
                         </model-viewer>
@@ -1077,7 +1082,7 @@
                     <div class="item-details">
                         <div class="item-header">
                             <p class="item-name" data-field="name" data-idx="${i}">${t(item, 'name')}</p>
-                            <button class="ar-btn">VIEW ON TABLE</button>
+                            <button class="ar-btn">${arLabel}</button>
                         </div>
                         <p class="ingredients" data-field="description" data-idx="${i}">${t(item, 'description')}</p>
                         <p class="price">${item.price}</p>
@@ -1085,19 +1090,17 @@
 
                 const mv = card.querySelector('model-viewer');
                 thumbObserver.observe(mv);
-                mv.addEventListener('click', () => openModal(i));
+                // camera-controls consumes drags; detect tap by measuring pointer travel
+                let _px = 0, _py = 0;
+                mv.addEventListener('pointerdown', e => { _px = e.clientX; _py = e.clientY; });
+                mv.addEventListener('pointerup',   e => {
+                    if (Math.abs(e.clientX - _px) < 6 && Math.abs(e.clientY - _py) < 6) openModal(i);
+                });
 
                 card.querySelector('.item-details').addEventListener('click', () => openModal(i));
                 card.querySelector('.ar-btn').addEventListener('click', e => { e.stopPropagation(); openAR(i); });
 
                 list.appendChild(card);
-            });
-
-            detectAR().then(cap => {
-                const u = UI[window.__lang];
-                document.querySelectorAll('.ar-btn').forEach(b => {
-                    b.textContent = cap === 'none' ? u.view3D : u.viewAR;
-                });
             });
 
             applyLang(window.__lang);
