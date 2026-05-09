@@ -10,54 +10,38 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
-        :root { --t: 0.45s ease; }
+        :root { --t: 0.22s ease; }
 
         [data-theme="night"] {
-            --bg:          #0e1a0e;
-            --bg2:         #162416;
-            --card:        #172217;
-            --card2:       #1e2e1e;
-            --border:      rgba(230,170,40,0.18);
-            --glow:        0 4px 28px rgba(230,170,40,0.10), 0 1px 4px rgba(0,0,0,0.7);
-            --glow-hover:  0 8px 36px rgba(230,170,40,0.22), 0 2px 8px rgba(0,0,0,0.8);
-            --text:        #f0e8d0;
-            --dim:         #8a9a78;
-            --accent:      #e8aa28;
-            --accent2:     #f0c040;
-            --accent-text: #0e1a00;
-            --thumb-bg:    #2a2a2a;
-            --modal-bg:    radial-gradient(ellipse at center, #1a2e1a 0%, #080f08 80%);
-            --vine:        #2a4a20;
-            --header-sub:  #7aaa50;
+            --bg:          #0d0d0d;
+            --card:        #161616;
+            --card2:       #1c1c1c;
+            --border:      rgba(240,192,64,0.2);
+            --text:        #e0e0e0;
+            --dim:         #888888;
+            --accent:      #f0c040;
+            --accent-text: #0d0d0d;
+            --thumb-bg:    #1a1a1a;
+            --modal-bg:    #0d0d0d;
         }
 
         [data-theme="day"] {
-            --bg:          #e8f5e0;
-            --bg2:         #d4eec8;
+            --bg:          #f4f4f4;
             --card:        #ffffff;
-            --card2:       #f0fae8;
-            --border:      rgba(80,160,40,0.25);
-            --glow:        0 4px 24px rgba(80,160,40,0.12), 0 1px 6px rgba(0,0,0,0.08);
-            --glow-hover:  0 8px 36px rgba(80,160,40,0.22), 0 2px 10px rgba(0,0,0,0.12);
-            --text:        #1a2e0a;
-            --dim:         #4a7030;
-            --accent:      #d4900a;
-            --accent2:     #f0b020;
+            --card2:       #eeeeee;
+            --border:      rgba(160,110,0,0.2);
+            --text:        #1a1a1a;
+            --dim:         #666666;
+            --accent:      #a87000;
             --accent-text: #ffffff;
-            --thumb-bg:    #3a3a3a;
-            --modal-bg:    radial-gradient(ellipse at center, #c8e8b0 0%, #a0cc88 80%);
-            --vine:        #5aaa30;
-            --header-sub:  #4a8a20;
+            --thumb-bg:    #e8e8e8;
+            --modal-bg:    #f0f0f0;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            background-color: var(--bg);
-            background-image:
-                radial-gradient(ellipse at 15% 0%, var(--bg2) 0%, transparent 55%),
-                radial-gradient(ellipse at 85% 100%, var(--bg2) 0%, transparent 55%);
-            background-attachment: fixed;
+            background: var(--bg);
             color: var(--text);
             font-family: 'Nunito', sans-serif;
             min-height: 100vh;
@@ -65,59 +49,36 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: background-color var(--t), color var(--t);
+            transition: background var(--t), color var(--t);
             overflow-x: hidden;
-        }
-
-        .vine-bar {
-            width: 100%;
-            max-width: 500px;
-            text-align: center;
-            font-size: 22px;
-            letter-spacing: 4px;
-            color: var(--vine);
-            padding: 10px 0 0;
-            transition: color var(--t);
-            user-select: none;
-            line-height: 1;
         }
 
         .header {
             width: 100%;
             max-width: 450px;
             text-align: center;
-            padding: 4px 0 24px;
+            padding: 64px 0 24px;
         }
 
         .header h1 {
             font-family: 'Bebas Neue', sans-serif;
             font-size: clamp(2.8rem, 10vw, 3.8rem);
             letter-spacing: 8px;
-            color: var(--accent2);
-            line-height: 1;
-            text-shadow:
-                0 0 60px rgba(230,170,40,0.5),
-                0 0 20px rgba(230,170,40,0.3),
-                0 2px 6px rgba(0,0,0,0.5);
-            transition: color var(--t), text-shadow var(--t);
-        }
-
-        [data-theme="day"] .header h1 {
             color: var(--accent);
-            text-shadow: 0 0 40px rgba(212,144,10,0.3), 0 2px 4px rgba(0,0,0,0.15);
+            line-height: 1;
+            transition: color var(--t);
         }
 
         .tagline {
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             letter-spacing: 4px;
             text-transform: uppercase;
-            color: var(--header-sub);
-            margin-top: 2px;
+            color: var(--dim);
+            margin-top: 6px;
             font-weight: 700;
             transition: color var(--t);
         }
 
-        /* ── Corner buttons ──────────────────────────────────────────── */
         #theme-toggle, #lang-toggle {
             position: fixed;
             top: 14px;
@@ -125,31 +86,26 @@
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 50px;
-            padding: 8px 14px;
+            padding: 8px 16px;
             cursor: pointer;
-            box-shadow: var(--glow);
-            display: flex;
-            align-items: center;
-            gap: 6px;
             color: var(--text);
             font-family: 'Nunito', sans-serif;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            transition: all var(--t);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: background var(--t), color var(--t), border-color var(--t);
         }
         #theme-toggle { right: 14px; }
         #lang-toggle  { left: 14px; }
-        #theme-toggle:active, #lang-toggle:active { transform: scale(0.93); }
-        #toggle-icon { font-size: 15px; }
+        #theme-toggle:active, #lang-toggle:active { opacity: 0.65; }
 
-        /* ── Menu list ───────────────────────────────────────────────── */
         .menu-list {
             width: 100%;
             max-width: 450px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
             position: relative;
             z-index: 1;
         }
@@ -157,21 +113,20 @@
         .menu-item {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 22px;
+            border-radius: 20px;
             display: flex;
-            padding: 13px;
-            gap: 13px;
+            padding: 12px;
+            gap: 12px;
             align-items: center;
-            box-shadow: var(--glow);
-            transition: background var(--t), border-color var(--t), box-shadow 0.2s, transform 0.2s;
+            transition: background var(--t), border-color var(--t);
         }
-        .menu-item:active { transform: scale(0.985); }
+        .menu-item:active { opacity: 0.75; transition: opacity 0.08s; }
 
         .thumb-wrap {
             width: 108px;
             height: 108px;
             flex-shrink: 0;
-            border-radius: 15px;
+            border-radius: 14px;
             overflow: hidden;
             background: var(--thumb-bg);
             border: 1px solid var(--border);
@@ -210,9 +165,9 @@
             background: var(--accent);
             color: var(--accent-text);
             border: none;
-            border-radius: 10px;
+            border-radius: 9px;
             padding: 7px 10px;
-            font-size: 0.65rem;
+            font-size: 0.63rem;
             font-weight: 800;
             font-family: 'Nunito', sans-serif;
             letter-spacing: 0.8px;
@@ -220,10 +175,10 @@
             white-space: nowrap;
             flex-shrink: 0;
             text-transform: uppercase;
-            transition: transform 0.15s, background var(--t), color var(--t), opacity 0.2s;
+            transition: background var(--t), opacity 0.15s;
         }
-        .ar-btn:active { transform: scale(0.93); }
-        .ar-btn:disabled { opacity: 0.6; cursor: wait; transform: none; }
+        .ar-btn:active { opacity: 0.7; transition: opacity 0.08s; }
+        .ar-btn:disabled { opacity: 0.45; cursor: wait; }
 
         .ingredients {
             font-size: 0.8rem;
@@ -238,11 +193,11 @@
             font-family: 'Bebas Neue', sans-serif;
             font-size: 1.15rem;
             letter-spacing: 1px;
-            color: var(--accent2);
+            color: var(--accent);
             transition: color var(--t);
         }
 
-        /* ── Modal ───────────────────────────────────────────────────── */
+        /* ── Modal ── */
         #modal {
             position: fixed;
             inset: 0;
@@ -253,7 +208,7 @@
             align-items: center;
             justify-content: center;
             opacity: 0;
-            transition: opacity 0.25s, background var(--t);
+            transition: opacity 0.2s, background var(--t);
         }
         #modal.active { opacity: 1; }
 
@@ -269,8 +224,7 @@
             font-family: 'Bebas Neue', sans-serif;
             font-size: 2.2rem;
             letter-spacing: 5px;
-            color: var(--accent2);
-            text-shadow: 0 0 30px rgba(230,170,40,0.4);
+            color: var(--accent);
             transition: color var(--t);
         }
 
@@ -278,7 +232,7 @@
             background: var(--card2);
             color: var(--text);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 10px 16px;
             cursor: pointer;
             font-size: 0.85rem;
@@ -305,39 +259,24 @@
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            width: 52px;
-            height: 52px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             border: 1px solid var(--border);
-            background: rgba(0,0,0,0.45);
+            background: rgba(0,0,0,0.5);
             color: var(--text);
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             cursor: pointer;
-            backdrop-filter: blur(8px);
-            transition: background 0.2s, transform 0.2s;
             z-index: 10000;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        .nav-arrow:active { background: rgba(0,0,0,0.7); transform: translateY(-50%) scale(0.93); }
+        .nav-arrow:active { opacity: 0.65; }
         .left-arrow  { left: 10px; }
         .right-arrow { right: 10px; }
 
-        .vine-bottom {
-            width: 100%;
-            max-width: 500px;
-            text-align: center;
-            font-size: 20px;
-            letter-spacing: 3px;
-            color: var(--vine);
-            padding: 20px 0 0;
-            transition: color var(--t);
-            user-select: none;
-            opacity: 0.6;
-        }
-
-        /* ── WebXR overlay ───────────────────────────────────────────── */
+        /* ── WebXR overlay ── */
         #xr-overlay {
             display: none;
             position: fixed;
@@ -345,8 +284,6 @@
             z-index: 51;
             pointer-events: none;
         }
-        /* Transparent fullscreen layer that captures drag/twist gestures
-           after placement. Sits behind all overlay buttons (DOM order). */
         #xr-gesture-layer {
             display: none;
             position: absolute;
@@ -358,7 +295,7 @@
             bottom: 110px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.65);
+            background: rgba(0,0,0,0.7);
             color: white;
             font-family: 'Nunito', sans-serif;
             font-size: 15px;
@@ -375,13 +312,13 @@
             pointer-events: all;
             align-items: center;
             gap: 16px;
-            background: rgba(0,0,0,0.55);
+            background: rgba(0,0,0,0.65);
             padding: 8px 20px;
             border-radius: 30px;
         }
         #xr-nav-row button {
             background: transparent;
-            border: 1px solid rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.35);
             color: white;
             width: 40px;
             height: 40px;
@@ -408,7 +345,7 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(255,255,255,0.55);
+            color: rgba(255,255,255,0.5);
             font-family: 'Nunito', sans-serif;
             font-size: 12px;
             white-space: nowrap;
@@ -418,9 +355,9 @@
             position: absolute;
             top: 18px;
             right: 18px;
-            background: rgba(0,0,0,0.55);
+            background: rgba(0,0,0,0.65);
             color: #ccc;
-            border: 1px solid rgba(255,255,255,0.25);
+            border: 1px solid rgba(255,255,255,0.2);
             padding: 8px 16px;
             border-radius: 20px;
             font-family: 'Nunito', sans-serif;
@@ -431,31 +368,22 @@
 </head>
 <body>
 
-    <button id="theme-toggle" aria-label="Toggle theme">
-        <span id="toggle-icon">☀️</span>
-        <span id="toggle-label">Day</span>
-    </button>
-
-    <button id="lang-toggle" aria-label="Toggle language">ქA</button>
-
-    <div class="vine-bar">🌿 🦜 🌺 🌿 🌴 🌺 🦜 🌿</div>
+    <button id="theme-toggle" aria-label="Toggle theme">Day</button>
+    <button id="lang-toggle" aria-label="Toggle language">KA</button>
 
     <div class="header">
         <h1>Burger Lions</h1>
-        <div class="tagline" id="tagline">🦁 &nbsp; Taste the Wild &nbsp; 🦁</div>
+        <div class="tagline" id="tagline">Taste the Wild</div>
     </div>
 
     <div class="menu-list" id="menu-list"></div>
 
-    <div class="vine-bottom">🌿 🌺 🌴 🌺 🌿</div>
-
-    <!-- Fullscreen 3D modal -->
     <div id="modal">
-        <button class="nav-arrow left-arrow"  id="modal-prev">❮</button>
-        <button class="nav-arrow right-arrow" id="modal-next">❯</button>
+        <button class="nav-arrow left-arrow"  id="modal-prev">&#10094;</button>
+        <button class="nav-arrow right-arrow" id="modal-next">&#10095;</button>
         <div class="modal-bar">
             <div id="modal-title"></div>
-            <button class="close-btn" id="close-btn">✕ Close</button>
+            <button class="close-btn" id="close-btn">Close</button>
         </div>
         <model-viewer id="modal-viewer"
             camera-controls
@@ -466,66 +394,38 @@
         <p class="tip" id="modal-tip">Drag to rotate</p>
     </div>
 
-    <!-- WebXR DOM overlay root — must be a direct body child for dom-overlay -->
     <div id="xr-overlay">
-        <!-- Gesture layer: first child = lowest z-order, catches background drags/twists -->
         <div id="xr-gesture-layer"></div>
         <div id="xr-place-hint">Point at a flat surface, then tap to place</div>
         <div id="xr-nav-row">
-            <button id="xr-prev">❮</button>
+            <button id="xr-prev">&#10094;</button>
             <span   id="xr-item-label"></span>
-            <button id="xr-next">❯</button>
+            <button id="xr-next">&#10095;</button>
         </div>
-        <div id="xr-move-hint">Drag to move · Twist two fingers to rotate</div>
+        <div id="xr-move-hint">Drag to move &middot; Twist two fingers to rotate</div>
         <button id="xr-exit">Exit AR</button>
     </div>
 
-    <!-- ── WebXR Three.js module ──────────────────────────────────────── -->
-    <script type="module">
-        import * as THREE     from 'https://esm.sh/three@0.155.0';
-        import { GLTFLoader } from 'https://esm.sh/three@0.155.0/examples/jsm/loaders/GLTFLoader';
+    <!-- WebXR — Three.js loaded lazily on first AR tap, not on page load -->
+    <script>
+    (function () {
+        let THREE, GLTFLoader;
+        let renderer, scene, camera, reticle, xrCanvas;
+        let carouselRoot, slotGroups = [];
+        let groundLabel, groundLabelMat, groundLabelTex = null;
+        let gestureLayer, xrOverlay;
+        let hitTestSource = null, xrSession = null, xrStarting = false;
+        let placed = false, isAnimating = false;
 
-        // ── Renderer ──────────────────────────────────────────────────
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.xr.enabled = true;
-        renderer.xr.setReferenceSpaceType('local');
-        Object.assign(renderer.domElement.style, {
-            position: 'fixed', top: '0', left: '0',
-            zIndex: '50', display: 'none'
-        });
-        document.body.appendChild(renderer.domElement);
-        const xrCanvas = renderer.domElement;
-
-        // ── Scene & lights ─────────────────────────────────────────────
-        const scene  = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-        scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(0.5, 1, 0.25);
-        scene.add(dirLight);
-
-        // ── Reticle ────────────────────────────────────────────────────
-        const reticle = new THREE.Mesh(
-            new THREE.RingGeometry(0.04, 0.07, 32),
-            new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
-        );
-        reticle.rotation.x       = -Math.PI / 2;
-        reticle.matrixAutoUpdate = false;
-        reticle.visible          = false;
-        scene.add(reticle);
-
-        // ── Carousel ───────────────────────────────────────────────────
-        const carouselRoot = new THREE.Group();
-        scene.add(carouselRoot);
-        carouselRoot.visible = false;
-
-        const slotGroups = Array.from({ length: 4 }, () => {
-            const g = new THREE.Group();
-            carouselRoot.add(g);
-            return g;
-        });
+        let MENU = [], N = 0;
+        const mod = i => ((i % N) + N) % N;
+        let currentCenterMenu = 0;
+        let slotOf     = { left: 0, center: 1, right: 2, hidden: 3 };
+        let menuOf     = [0, 0, 0, 0];
+        let hiddenSide = 'farRight';
+        const meshObjs   = [null, null, null, null];
+        const modelGLTFs = {};
+        let loader;
 
         const CFG = {
             farLeft:  { x: -0.35, z: -0.12, s: 0.20, opacity: 0    },
@@ -534,24 +434,15 @@
             right:    { x:  0.14, z: -0.08, s: 0.20, opacity: 0.65 },
             farRight: { x:  0.35, z: -0.12, s: 0.20, opacity: 0    },
         };
-        const INIT_ROLES = ['left', 'center', 'right', 'farRight'];
+        const INIT_ROLES    = ['left', 'center', 'right', 'farRight'];
+        const DUR           = 350;
+        const MOVE_SCALE    = 0.0015;
+        const ROTATE_SCALE  = 0.005;
+        const DEAD_ZONE     = 3;
+        const MAX_DELTA     = 40;
+        const activeTouches = new Map();
 
-        let MENU              = [];
-        let N                 = 0;
-        const mod             = i => ((i % N) + N) % N;
-        let slotOf            = { left: 0, center: 1, right: 2, hidden: 3 };
-        let menuOf            = [0, 0, 0, 0];
-        let hiddenSide        = 'farRight';
-        let currentCenterMenu = 0;
-        let isAnimating       = false;
-        let placed            = false;
-        const DUR             = 350;
-        const meshObjs        = [null, null, null, null];
-
-        // ── Model cache ────────────────────────────────────────────────
-        const modelGLTFs = {};
-        const loader     = new GLTFLoader();
-
+        // ── Models ────────────────────────────────────────────────────
         function preloadModels() {
             const paths = [...new Set(MENU.map(m => m.model || 'food.glb'))];
             return Promise.all(paths.map(p =>
@@ -595,7 +486,7 @@
             });
         }
 
-        // ── Opacity ────────────────────────────────────────────────────
+        // ── Opacity ───────────────────────────────────────────────────
         function setOpacity(idx, opacity) {
             const obj = meshObjs[idx];
             if (!obj) return;
@@ -618,7 +509,7 @@
             })(performance.now());
         }
 
-        // ── Slot animation ─────────────────────────────────────────────
+        // ── Slot animation ────────────────────────────────────────────
         function snapSlot(idx, role) {
             slotGroups[idx].position.x = CFG[role].x;
             slotGroups[idx].position.z = CFG[role].z;
@@ -640,44 +531,28 @@
             })(performance.now());
         }
 
-        // ── Ground label (flat on table surface, bottom edge toward camera) ─
-        const groundLabelGeo = new THREE.PlaneGeometry(0.42, 0.10);
-        const groundLabelMat = new THREE.MeshBasicMaterial({
-            transparent: true,
-            depthTest:   false,
-            side:        THREE.DoubleSide
-        });
-        const groundLabel = new THREE.Mesh(groundLabelGeo, groundLabelMat);
-        groundLabel.renderOrder = 999;
-        groundLabel.visible     = false;
-        scene.add(groundLabel);
-        let groundLabelTex = null;
-
+        // ── Ground label ──────────────────────────────────────────────
         function buildLabelTexture(item) {
             const W = 1024, H = 200;
             const cvs = document.createElement('canvas');
             cvs.width = W; cvs.height = H;
             const ctx = cvs.getContext('2d');
             ctx.clearRect(0, 0, W, H);
-            ctx.textAlign    = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.lineJoin     = 'round';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
 
             const lang = window.__lang || 'en';
             const name = (lang === 'ka' && item.name_ka) ? item.name_ka : item.name;
 
-            ctx.font        = "88px 'Bebas Neue', sans-serif";
-            ctx.lineWidth   = 10;
-            ctx.strokeStyle = 'rgba(0,0,0,0.95)';
+            ctx.font = "88px 'Bebas Neue', sans-serif";
+            ctx.lineWidth = 10; ctx.strokeStyle = 'rgba(0,0,0,0.95)';
             ctx.strokeText(name, W / 2, H * 0.36);
             ctx.fillStyle = '#ffffff';
             ctx.fillText(name, W / 2, H * 0.36);
 
-            ctx.font        = "bold 64px 'Nunito', sans-serif";
-            ctx.lineWidth   = 8;
-            ctx.strokeStyle = 'rgba(0,0,0,0.95)';
+            ctx.font = "bold 64px 'Nunito', sans-serif";
+            ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(0,0,0,0.95)';
             ctx.strokeText(item.price, W / 2, H * 0.72);
-            ctx.fillStyle = '#FFD700';
+            ctx.fillStyle = '#f0c040';
             ctx.fillText(item.price, W / 2, H * 0.72);
 
             if (groundLabelTex) groundLabelTex.dispose();
@@ -688,7 +563,7 @@
         function refreshGroundLabel() {
             const item = MENU[currentCenterMenu];
             if (!item) return;
-            groundLabelMat.map         = buildLabelTexture(item);
+            groundLabelMat.map = buildLabelTexture(item);
             groundLabelMat.needsUpdate = true;
         }
 
@@ -706,7 +581,7 @@
             groundLabel.rotation.set(-Math.PI / 2, angle, 0);
         }
 
-        // ── Navigation ─────────────────────────────────────────────────
+        // ── Navigation ────────────────────────────────────────────────
         function updateOverlayLabel() {
             const item = MENU[currentCenterMenu];
             if (!item) return;
@@ -717,25 +592,21 @@
 
         function goNext() {
             if (isAnimating) return;
-            isAnimating         = true;
-            groundLabel.visible = false;
+            isAnimating = true; groundLabel.visible = false;
             const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
             if (hiddenSide === 'farLeft') snapSlot(hIdx, 'farRight');
             menuOf[hIdx] = mod(menuOf[rIdx] + 1);
-            setSlotModel(hIdx, menuOf[hIdx]);
-            setOpacity(hIdx, 0);
-            animSlot(lIdx, 'farLeft', DUR); animSlot(cIdx, 'left',   DUR);
-            animSlot(rIdx, 'center',  DUR); animSlot(hIdx, 'right',  DUR);
+            setSlotModel(hIdx, menuOf[hIdx]); setOpacity(hIdx, 0);
+            animSlot(lIdx, 'farLeft', DUR); animSlot(cIdx, 'left',  DUR);
+            animSlot(rIdx, 'center',  DUR); animSlot(hIdx, 'right', DUR);
             animOpacity(lIdx, CFG.left.opacity,   0,                  DUR);
             animOpacity(cIdx, CFG.center.opacity, CFG.left.opacity,   DUR);
             animOpacity(rIdx, CFG.right.opacity,  CFG.center.opacity, DUR);
             animOpacity(hIdx, 0,                  CFG.right.opacity,  DUR);
             setTimeout(() => {
-                slotOf            = { left: cIdx, center: rIdx, right: hIdx, hidden: lIdx };
-                hiddenSide        = 'farLeft';
-                currentCenterMenu = mod(currentCenterMenu + 1);
-                updateOverlayLabel();
-                refreshGroundLabel();
+                slotOf = { left: cIdx, center: rIdx, right: hIdx, hidden: lIdx };
+                hiddenSide = 'farLeft'; currentCenterMenu = mod(currentCenterMenu + 1);
+                updateOverlayLabel(); refreshGroundLabel();
                 if (placed) groundLabel.visible = true;
                 isAnimating = false;
             }, DUR + 10);
@@ -743,141 +614,34 @@
 
         function goPrev() {
             if (isAnimating) return;
-            isAnimating         = true;
-            groundLabel.visible = false;
+            isAnimating = true; groundLabel.visible = false;
             const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
             if (hiddenSide === 'farRight') snapSlot(hIdx, 'farLeft');
             menuOf[hIdx] = mod(menuOf[lIdx] - 1);
-            setSlotModel(hIdx, menuOf[hIdx]);
-            setOpacity(hIdx, 0);
-            animSlot(rIdx, 'farRight', DUR); animSlot(cIdx, 'right',  DUR);
-            animSlot(lIdx, 'center',   DUR); animSlot(hIdx, 'left',   DUR);
+            setSlotModel(hIdx, menuOf[hIdx]); setOpacity(hIdx, 0);
+            animSlot(rIdx, 'farRight', DUR); animSlot(cIdx, 'right', DUR);
+            animSlot(lIdx, 'center',   DUR); animSlot(hIdx, 'left',  DUR);
             animOpacity(rIdx, CFG.right.opacity,  0,                   DUR);
             animOpacity(cIdx, CFG.center.opacity, CFG.right.opacity,   DUR);
             animOpacity(lIdx, CFG.left.opacity,   CFG.center.opacity,  DUR);
             animOpacity(hIdx, 0,                  CFG.left.opacity,    DUR);
             setTimeout(() => {
-                slotOf            = { left: hIdx, center: lIdx, right: cIdx, hidden: rIdx };
-                hiddenSide        = 'farRight';
-                currentCenterMenu = mod(currentCenterMenu - 1);
-                updateOverlayLabel();
-                refreshGroundLabel();
+                slotOf = { left: hIdx, center: lIdx, right: cIdx, hidden: rIdx };
+                hiddenSide = 'farRight'; currentCenterMenu = mod(currentCenterMenu - 1);
+                updateOverlayLabel(); refreshGroundLabel();
                 if (placed) groundLabel.visible = true;
                 isAnimating = false;
             }, DUR + 10);
         }
 
-        // ── Touch gestures ─────────────────────────────────────────────
-        // Listeners are on the gesture layer (inside dom-overlay), NOT the canvas.
-        // During WebXR, touch events on the canvas are consumed by the XR runtime
-        // and converted to XR select events. Dom-overlay elements intercept touches
-        // as normal HTML events, bypassing the XR runtime. The gesture layer is
-        // shown only after placement, so pre-placement taps still reach the XR
-        // runtime and fire select events correctly.
-        const MOVE_SCALE    = 0.0015;
-        const ROTATE_SCALE  = 0.005;
-        const DEAD_ZONE     = 3;
-        const MAX_DELTA     = 40;
-        const activeTouches = new Map();
-        const gestureLayer  = document.getElementById('xr-gesture-layer');
-
-        gestureLayer.addEventListener('touchstart', e => {
-            for (const t of e.changedTouches)
-                activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY, prevX: t.clientX, prevY: t.clientY });
-        }, { passive: true });
-
-        gestureLayer.addEventListener('touchmove', e => {
-            e.preventDefault();
-            for (const t of e.changedTouches) {
-                const p = activeTouches.get(t.identifier);
-                if (p) activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY, prevX: p.x, prevY: p.y });
-            }
-            const all = [...activeTouches.values()];
-            if (all.length === 1) {
-                let dx = all[0].x - all[0].prevX;
-                let dy = all[0].y - all[0].prevY;
-                if (Math.abs(dx) < DEAD_ZONE && Math.abs(dy) < DEAD_ZONE) return;
-                dx = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, dx));
-                dy = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, dy));
-                carouselRoot.position.x += dx * MOVE_SCALE;
-                carouselRoot.position.z += dy * MOVE_SCALE;
-            } else if (all.length >= 2) {
-                const [left, right] = [...all].sort((a, b) => a.x - b.x);
-                let twist = ((right.y - right.prevY) - (left.y - left.prevY)) * 0.5;
-                if (Math.abs(twist) < DEAD_ZONE) return;
-                twist = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, twist));
-                slotGroups[slotOf.center].rotation.y -= twist * ROTATE_SCALE;
-            }
-        }, { passive: false });
-
-        gestureLayer.addEventListener('touchend', e => {
-            for (const t of e.changedTouches) activeTouches.delete(t.identifier);
-        }, { passive: true });
-
-        // ── XR session management ──────────────────────────────────────
-        let hitTestSource = null;
-        let xrSession     = null;
-        const xrOverlay   = document.getElementById('xr-overlay');
-
-        renderer.xr.addEventListener('sessionstart', async () => {
-            try {
-                const session     = renderer.xr.getSession();
-                const viewerSpace = await session.requestReferenceSpace('viewer');
-                hitTestSource     = await session.requestHitTestSource({ space: viewerSpace });
-            } catch (e) {
-                console.error('Hit-test setup failed:', e);
-            }
-        });
-
-        renderer.xr.addEventListener('sessionend', () => {
-            hitTestSource = null;
-            placed        = false;
-            xrSession     = null;
-            xrStarting    = false;
-            carouselRoot.visible  = false;
-            reticle.visible       = false;
-            groundLabel.visible   = false;
-            xrCanvas.style.display       = 'none';
-            xrOverlay.style.display      = 'none';
-            gestureLayer.style.display   = 'none';
-            document.getElementById('xr-place-hint').style.display = 'block';
-            document.getElementById('xr-nav-row').style.display    = 'none';
-            document.getElementById('xr-move-hint').style.display  = 'none';
-            activeTouches.clear();
-            slotOf      = { left: 0, center: 1, right: 2, hidden: 3 };
-            hiddenSide  = 'farRight';
-            isAnimating = false;
-            initSlots();
-            document.dispatchEvent(new CustomEvent('xr-session-end'));
-        });
-
-        renderer.setAnimationLoop((time, frame) => {
-            if (frame && !placed && hitTestSource) {
-                const refSpace = renderer.xr.getReferenceSpace();
-                if (refSpace) {
-                    const results = frame.getHitTestResults(hitTestSource);
-                    if (results.length > 0) {
-                        const pose = results[0].getPose(refSpace);
-                        if (pose) {
-                            reticle.visible = true;
-                            reticle.matrix.fromArray(pose.transform.matrix);
-                        }
-                    } else {
-                        reticle.visible = false;
-                    }
-                }
-            }
-            updateGroundLabelTransform();
-            renderer.render(scene, camera);
-        });
-
+        // ── Placement ─────────────────────────────────────────────────
         function onSelect() {
             if (placed || !reticle.visible) return;
             carouselRoot.position.setFromMatrixPosition(reticle.matrix);
             carouselRoot.quaternion.setFromRotationMatrix(reticle.matrix);
-            carouselRoot.visible     = true;
-            reticle.visible          = false;
-            placed                   = true;
+            carouselRoot.visible = true;
+            reticle.visible      = false;
+            placed               = true;
             gestureLayer.style.display = 'block';
             refreshGroundLabel();
             groundLabel.visible = true;
@@ -886,24 +650,159 @@
             document.getElementById('xr-move-hint').style.display  = 'block';
         }
 
-        // ── Overlay buttons ────────────────────────────────────────────
-        document.getElementById('xr-exit').addEventListener('click', () => xrSession?.end());
-        document.getElementById('xr-prev').addEventListener('click', goPrev);
-        document.getElementById('xr-next').addEventListener('click', goNext);
+        // ── One-time init — deferred until first AR tap ───────────────
+        let _setupDone = false;
 
-        // ── Public API ─────────────────────────────────────────────────
-        let xrStarting = false;
+        async function _setup() {
+            if (_setupDone) return;
+            _setupDone = true;
 
+            const [threeNS, loaderMod] = await Promise.all([
+                import('https://esm.sh/three@0.155.0'),
+                import('https://esm.sh/three@0.155.0/examples/jsm/loaders/GLTFLoader')
+            ]);
+            THREE      = threeNS;
+            GLTFLoader = loaderMod.GLTFLoader;
+            loader     = new GLTFLoader();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            renderer.xr.setReferenceSpaceType('local');
+            xrCanvas = renderer.domElement;
+            Object.assign(xrCanvas.style, {
+                position: 'fixed', top: '0', left: '0',
+                zIndex: '50', display: 'none'
+            });
+            document.body.appendChild(xrCanvas);
+
+            scene  = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+            scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(0.5, 1, 0.25);
+            scene.add(dirLight);
+
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.04, 0.07, 32),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+            );
+            reticle.rotation.x       = -Math.PI / 2;
+            reticle.matrixAutoUpdate = false;
+            reticle.visible          = false;
+            scene.add(reticle);
+
+            carouselRoot = new THREE.Group();
+            scene.add(carouselRoot);
+            carouselRoot.visible = false;
+            slotGroups = Array.from({ length: 4 }, () => {
+                const g = new THREE.Group(); carouselRoot.add(g); return g;
+            });
+
+            const geo = new THREE.PlaneGeometry(0.42, 0.10);
+            groundLabelMat = new THREE.MeshBasicMaterial({
+                transparent: true, depthTest: false, side: THREE.DoubleSide
+            });
+            groundLabel = new THREE.Mesh(geo, groundLabelMat);
+            groundLabel.renderOrder = 999;
+            groundLabel.visible = false;
+            scene.add(groundLabel);
+
+            gestureLayer = document.getElementById('xr-gesture-layer');
+            xrOverlay    = document.getElementById('xr-overlay');
+
+            // Touch gestures on the gesture layer inside dom-overlay.
+            // Canvas touch events are consumed by the XR runtime during a session;
+            // dom-overlay elements receive normal HTML touch events instead.
+            gestureLayer.addEventListener('touchstart', e => {
+                for (const t of e.changedTouches)
+                    activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY, prevX: t.clientX, prevY: t.clientY });
+            }, { passive: true });
+
+            gestureLayer.addEventListener('touchmove', e => {
+                e.preventDefault();
+                for (const t of e.changedTouches) {
+                    const p = activeTouches.get(t.identifier);
+                    if (p) activeTouches.set(t.identifier, { x: t.clientX, y: t.clientY, prevX: p.x, prevY: p.y });
+                }
+                const all = [...activeTouches.values()];
+                if (all.length === 1) {
+                    let dx = all[0].x - all[0].prevX;
+                    let dy = all[0].y - all[0].prevY;
+                    if (Math.abs(dx) < DEAD_ZONE && Math.abs(dy) < DEAD_ZONE) return;
+                    dx = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, dx));
+                    dy = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, dy));
+                    carouselRoot.position.x += dx * MOVE_SCALE;
+                    carouselRoot.position.z += dy * MOVE_SCALE;
+                } else if (all.length >= 2) {
+                    const [left, right] = [...all].sort((a, b) => a.x - b.x);
+                    let twist = ((right.y - right.prevY) - (left.y - left.prevY)) * 0.5;
+                    if (Math.abs(twist) < DEAD_ZONE) return;
+                    twist = Math.max(-MAX_DELTA, Math.min(MAX_DELTA, twist));
+                    slotGroups[slotOf.center].rotation.y -= twist * ROTATE_SCALE;
+                }
+            }, { passive: false });
+
+            gestureLayer.addEventListener('touchend', e => {
+                for (const t of e.changedTouches) activeTouches.delete(t.identifier);
+            }, { passive: true });
+
+            renderer.xr.addEventListener('sessionstart', async () => {
+                try {
+                    const session     = renderer.xr.getSession();
+                    const viewerSpace = await session.requestReferenceSpace('viewer');
+                    hitTestSource     = await session.requestHitTestSource({ space: viewerSpace });
+                } catch (e) { console.error('Hit-test setup failed:', e); }
+            });
+
+            renderer.xr.addEventListener('sessionend', () => {
+                hitTestSource = null; placed = false;
+                xrSession = null; xrStarting = false;
+                carouselRoot.visible = false; reticle.visible = false; groundLabel.visible = false;
+                xrCanvas.style.display       = 'none';
+                xrOverlay.style.display      = 'none';
+                gestureLayer.style.display   = 'none';
+                document.getElementById('xr-place-hint').style.display = 'block';
+                document.getElementById('xr-nav-row').style.display    = 'none';
+                document.getElementById('xr-move-hint').style.display  = 'none';
+                activeTouches.clear();
+                slotOf = { left: 0, center: 1, right: 2, hidden: 3 };
+                hiddenSide = 'farRight'; isAnimating = false;
+                initSlots();
+                document.dispatchEvent(new CustomEvent('xr-session-end'));
+            });
+
+            renderer.setAnimationLoop((time, frame) => {
+                if (frame && !placed && hitTestSource) {
+                    const refSpace = renderer.xr.getReferenceSpace();
+                    if (refSpace) {
+                        const results = frame.getHitTestResults(hitTestSource);
+                        if (results.length > 0) {
+                            const pose = results[0].getPose(refSpace);
+                            if (pose) { reticle.visible = true; reticle.matrix.fromArray(pose.transform.matrix); }
+                        } else { reticle.visible = false; }
+                    }
+                }
+                updateGroundLabelTransform();
+                renderer.render(scene, camera);
+            });
+
+            document.getElementById('xr-exit').addEventListener('click', () => xrSession?.end());
+            document.getElementById('xr-prev').addEventListener('click', goPrev);
+            document.getElementById('xr-next').addEventListener('click', goNext);
+        }
+
+        // ── Public API ────────────────────────────────────────────────
         window.XR = {
             async start(itemIndex, items) {
                 if (xrStarting || xrSession) return;
                 xrStarting = true;
 
-                MENU = items;
-                N    = MENU.length;
+                MENU = items; N = MENU.length;
                 currentCenterMenu = Math.max(0, Math.min(itemIndex, N - 1));
 
-                // Ensure web fonts are rendered in canvas textures
+                await _setup();
                 await document.fonts.ready;
 
                 try { await preloadModels(); }
@@ -921,6 +820,7 @@
                 } catch (e) {
                     console.error('XR session failed:', e);
                     xrStarting = false;
+                    window.__arCap = 'none';
                     document.dispatchEvent(new CustomEvent('xr-session-end', { detail: { fallbackIdx: itemIndex } }));
                     return;
                 }
@@ -932,35 +832,39 @@
                 document.dispatchEvent(new CustomEvent('xr-session-start'));
             }
         };
+    })();
     </script>
 
     <!-- ── Catalog logic ──────────────────────────────────────────────── -->
     <script>
-        // ── UI strings ─────────────────────────────────────────────────
         const UI = {
             en: {
-                tagline:   '🦁   Taste the Wild   🦁',
+                tagline:   'Taste the Wild',
                 viewAR:    'VIEW ON TABLE',
                 view3D:    'VIEW IN 3D',
-                loading:   'Loading…',
-                close:     '✕ Close',
+                loading:   'Loading...',
+                close:     'Close',
                 tip:       'Drag to rotate',
                 placeHint: 'Point at a flat surface, then tap to place',
                 moveHint:  'Drag to move · Twist two fingers to rotate',
                 exitAR:    'Exit AR',
-                langBtn:   'ქA',
+                langBtn:   'KA',
+                themeDay:  'Day',
+                themeNight:'Night',
             },
             ka: {
-                tagline:   '🦁   გემო ველისა   🦁',
+                tagline:   'გემო ველისა',
                 viewAR:    'ᲛᲐᲒᲘᲓᲐᲖᲔ ᲜᲐᲮᲕᲐ',
                 view3D:    '3D-ში ᲜᲐᲮᲕᲐ',
-                loading:   'იტვირთება…',
-                close:     '✕ დახურვა',
+                loading:   'იტვირთება...',
+                close:     'დახურვა',
                 tip:       'სანახავად გადაათრიე',
                 placeHint: 'მიანიშნე ბრტყელ ზედაპირზე, შემდეგ შეეხე',
                 moveHint:  'გადასაადგილებლად გადაათრიე · ორი თითით შეტრიალება',
                 exitAR:    'AR-ის დახურვა',
                 langBtn:   'EN',
+                themeDay:  'Day',
+                themeNight:'Night',
             }
         };
 
@@ -976,8 +880,11 @@
             window.__lang = lang;
             localStorage.setItem('bl-lang', lang);
             const u = UI[lang];
-            document.getElementById('tagline').innerHTML         = u.tagline;
+            const html = document.documentElement;
+            const theme = html.getAttribute('data-theme');
+            document.getElementById('tagline').textContent       = u.tagline;
             document.getElementById('lang-toggle').textContent   = u.langBtn;
+            document.getElementById('theme-toggle').textContent  = theme === 'night' ? u.themeDay : u.themeNight;
             document.getElementById('close-btn').textContent     = u.close;
             document.getElementById('modal-tip').textContent     = u.tip;
             document.getElementById('xr-place-hint').textContent = u.placeHint;
@@ -996,23 +903,21 @@
         });
 
         // ── Theme ──────────────────────────────────────────────────────
-        const html        = document.documentElement;
-        const toggleBtn   = document.getElementById('theme-toggle');
-        const toggleIcon  = document.getElementById('toggle-icon');
-        const toggleLabel = document.getElementById('toggle-label');
+        const html      = document.documentElement;
+        const themeBtn  = document.getElementById('theme-toggle');
 
         function applyTheme(theme) {
             html.setAttribute('data-theme', theme);
-            toggleIcon.textContent  = theme === 'night' ? '☀️' : '🌙';
-            toggleLabel.textContent = theme === 'night' ? 'Day' : 'Night';
+            const u = UI[window.__lang];
+            themeBtn.textContent = theme === 'night' ? u.themeDay : u.themeNight;
             localStorage.setItem('bl-theme', theme);
         }
         applyTheme(localStorage.getItem('bl-theme') || 'night');
-        toggleBtn.addEventListener('click', () => {
+        themeBtn.addEventListener('click', () => {
             applyTheme(html.getAttribute('data-theme') === 'night' ? 'day' : 'night');
         });
 
-        // ── XR session events — hide catalog chrome during AR ──────────
+        // ── XR session state ───────────────────────────────────────────
         document.addEventListener('xr-session-start', () => {
             document.getElementById('theme-toggle').style.display = 'none';
             document.getElementById('lang-toggle').style.display  = 'none';
@@ -1023,7 +928,6 @@
             setARButtonsState(false);
             document.getElementById('theme-toggle').style.display = '';
             document.getElementById('lang-toggle').style.display  = '';
-            // If session failed to start (non-ARCore device), fall back to 3D modal
             if (e.detail?.fallbackIdx != null) openModal(e.detail.fallbackIdx);
         });
 
@@ -1064,7 +968,7 @@
 
         function closeModal() {
             modal.classList.remove('active');
-            setTimeout(() => { modal.style.display = 'none'; }, 250);
+            setTimeout(() => { modal.style.display = 'none'; }, 200);
             document.body.style.overflow = '';
         }
 
@@ -1095,7 +999,6 @@
             setTimeout(() => tmp.remove(), 5000);
         }
 
-        // ── AR button loading state ────────────────────────────────────
         function setARButtonsState(loading) {
             const u = UI[window.__lang];
             const label = loading ? u.loading : (window.__arCap === 'none' ? u.view3D : u.viewAR);
@@ -1116,33 +1019,19 @@
             const cap  = window.__arCap ?? await detectAR();
             const item = menuItems[idx];
 
-            if (!item) {
-                setARButtonsState(false);
-                _arOpening = false;
-                return;
-            }
+            if (!item) { setARButtonsState(false); _arOpening = false; return; }
 
             if (cap === 'webxr') {
-                // Button state and _arOpening are restored by the xr-session-end event.
-                // If XR.start() fails, it dispatches xr-session-end itself.
                 if (window.XR) {
                     await window.XR.start(idx, menuItems);
                 } else {
-                    openModal(idx);
-                    setARButtonsState(false);
-                    _arOpening = false;
+                    openModal(idx); setARButtonsState(false); _arOpening = false;
                 }
             } else if (cap === 'arkit') {
                 activateARDirectly(item.model || 'food.glb');
-                // Quick Look opens as a system layer — restore buttons once it's open
-                setTimeout(() => {
-                    setARButtonsState(false);
-                    _arOpening = false;
-                }, 2500);
+                setTimeout(() => { setARButtonsState(false); _arOpening = false; }, 2500);
             } else {
-                openModal(idx);
-                setARButtonsState(false);
-                _arOpening = false;
+                openModal(idx); setARButtonsState(false); _arOpening = false;
             }
         }
 
@@ -1155,7 +1044,7 @@
                     thumbObserver.unobserve(mv);
                 }
             });
-        }, { rootMargin: '200px' });
+        }, { rootMargin: '150px' });
 
         async function buildMenu() {
             let items;
@@ -1163,11 +1052,11 @@
                 items = await fetch('./foods/menu.json').then(r => r.json());
             } catch {
                 items = [
-                    { name: 'Druidi',    name_ka: 'დრუიდი',    description: 'Ancient grain bowl with roasted herbs, olive oil & spiced lamb',              description_ka: 'ძველი მარცვლეულის თასი შებრაწული მწვანილებით, ზეთისხილის ზეთითა და სანელებლებიანი ბატკნის ხორცით', price: '$18.99', model: 'Druidi.glb' },
-                    { name: 'Asteroidi', name_ka: 'ასტეროიდი', description: 'Crispy meteor-shaped fritters with spiced chickpea filling & tahini drizzle', description_ka: 'ხრაშუნა კვერები სანელებლებიანი ბლის შიგთავსით და ტაჰინის სოუსით',                                              price: '$12.99', model: 'food.glb'   },
-                    { name: 'Iulius',    name_ka: 'იულიუსი',   description: 'Slow-braised veal shank with saffron risotto & gremolata',                    description_ka: 'ნელა გახარშული ხბოს ბარკლი შაფრანის რიზოტოთი და გრემოლატათი',                                             price: '$24.99', model: 'Druidi.glb' },
+                    { name: 'Druidi',    name_ka: 'დრუიდი',    description: 'Ancient grain bowl with roasted herbs, olive oil & spiced lamb',                description_ka: 'ძველი მარცვლეულის თასი შებრაწული მწვანილებით, ზეთისხილის ზეთითა და სანელებლებიანი ბატკნის ხორცით', price: '$18.99', model: 'Druidi.glb' },
+                    { name: 'Asteroidi', name_ka: 'ასტეროიდი', description: 'Crispy meteor-shaped fritters with spiced chickpea filling & tahini drizzle',   description_ka: 'ხრაშუნა კვერები სანელებლებიანი ბლის შიგთავსით და ტაჰინის სოუსით',                                              price: '$12.99', model: 'food.glb'   },
+                    { name: 'Iulius',    name_ka: 'იულიუსი',   description: 'Slow-braised veal shank with saffron risotto & gremolata',                      description_ka: 'ნელა გახარშული ხბოს ბარკლი შაფრანის რიზოტოთი და გრემოლატათი',                                             price: '$24.99', model: 'Druidi.glb' },
                     { name: 'Pompeii',   name_ka: 'პომპეი',    description: 'Wood-fired flatbread with San Marzano tomato, buffalo mozzarella & fresh basil', description_ka: 'შეშის ღუმელში გამომცხვარი პიძა სან-მარძანოს პომიდვრით, კამეჩის მოცარელათი და ახალი ბაზილიკოთი', price: '$14.99', model: 'food.glb'   },
-                    { name: 'Galius',    name_ka: 'გალიუსი',   description: 'Charcoal-grilled chicken thighs with roasted garlic, lemon & wild herbs',    description_ka: 'ნახშირზე შემწვარი წიწილის ბარძაყი შებრაწული ნიორით, ლიმონითა და ველური მწვანილებით',                     price: '$16.99', model: 'Druidi.glb' },
+                    { name: 'Galius',    name_ka: 'გალიუსი',   description: 'Charcoal-grilled chicken thighs with roasted garlic, lemon & wild herbs',       description_ka: 'ნახშირზე შემწვარი წიწილის ბარძაყი შებრაწული ნიორით, ლიმონითა და ველური მწვანილებით',                     price: '$16.99', model: 'Druidi.glb' },
                 ];
             }
             menuItems = items;
@@ -1176,12 +1065,11 @@
             items.forEach((item, i) => {
                 const card = document.createElement('div');
                 card.className = 'menu-item';
-                const modelSrc = item.model || 'food.glb';
                 card.innerHTML = `
                     <div class="thumb-wrap">
                         <model-viewer
-                            data-src="${modelSrc}"
-                            shadow-intensity="0.6"
+                            data-src="${item.model || 'food.glb'}"
+                            shadow-intensity="0"
                             min-camera-orbit="auto 0deg auto"
                             max-camera-orbit="auto 90deg auto">
                         </model-viewer>
@@ -1195,12 +1083,10 @@
                         <p class="price">${item.price}</p>
                     </div>`;
 
-                // Thumbnail tap → 3D preview modal; lazy-load src when scrolled into view
                 const mv = card.querySelector('model-viewer');
                 thumbObserver.observe(mv);
                 mv.addEventListener('click', () => openModal(i));
 
-                // Text area tap → 3D preview modal; AR button → AR/3D based on capability
                 card.querySelector('.item-details').addEventListener('click', () => openModal(i));
                 card.querySelector('.ar-btn').addEventListener('click', e => { e.stopPropagation(); openAR(i); });
 
