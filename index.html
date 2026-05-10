@@ -342,15 +342,6 @@
             align-items: center;
             justify-content: center;
         }
-        #xr-item-label {
-            color: white;
-            font-family: 'Nunito', sans-serif;
-            font-size: 14px;
-            font-weight: 700;
-            white-space: nowrap;
-            min-width: 80px;
-            text-align: center;
-        }
         #xr-move-hint {
             display: none;
             position: absolute;
@@ -411,7 +402,6 @@
         <div id="xr-place-hint">Point at a flat surface, then tap to place</div>
         <div id="xr-nav-row">
             <button id="xr-prev">&#10094;</button>
-            <span   id="xr-item-label"></span>
             <button id="xr-next">&#10095;</button>
         </div>
         <div id="xr-move-hint">Drag to move &middot; Twist two fingers to rotate</div>
@@ -424,7 +414,6 @@
         let THREE, GLTFLoader;
         let renderer, scene, camera, reticle, xrCanvas;
         let carouselRoot, slotGroups = [];
-        let groundLabel, groundLabelMat, groundLabelTex = null;
         let gestureLayer, xrOverlay;
         let hitTestSource = null, xrSession = null, xrStarting = false;
         let placed = false, isAnimating = false;
@@ -543,68 +532,10 @@
             })(performance.now());
         }
 
-        // ── Ground label ──────────────────────────────────────────────
-        function buildLabelTexture(item) {
-            const W = 1024, H = 200;
-            const cvs = document.createElement('canvas');
-            cvs.width = W; cvs.height = H;
-            const ctx = cvs.getContext('2d');
-            ctx.clearRect(0, 0, W, H);
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
-
-            const lang = window.__lang || 'en';
-            const name = (lang === 'ka' && item.name_ka) ? item.name_ka : item.name;
-
-            ctx.font = "88px 'Bebas Neue', sans-serif";
-            ctx.lineWidth = 10; ctx.strokeStyle = 'rgba(0,0,0,0.95)';
-            ctx.strokeText(name, W / 2, H * 0.36);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(name, W / 2, H * 0.36);
-
-            ctx.font = "bold 64px 'Nunito', sans-serif";
-            ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(0,0,0,0.95)';
-            ctx.strokeText(item.price, W / 2, H * 0.72);
-            ctx.fillStyle = '#f0c040';
-            ctx.fillText(item.price, W / 2, H * 0.72);
-
-            if (groundLabelTex) groundLabelTex.dispose();
-            groundLabelTex = new THREE.CanvasTexture(cvs);
-            return groundLabelTex;
-        }
-
-        function refreshGroundLabel() {
-            const item = MENU[currentCenterMenu];
-            if (!item) return;
-            groundLabelMat.map = buildLabelTexture(item);
-            groundLabelMat.needsUpdate = true;
-        }
-
-        function updateGroundLabelTransform() {
-            if (!groundLabel.visible || !placed) return;
-            const dx    = camera.position.x - carouselRoot.position.x;
-            const dz    = camera.position.z - carouselRoot.position.z;
-            const angle = Math.atan2(dx, dz);
-            const OFF   = 0.16;
-            groundLabel.position.set(
-                carouselRoot.position.x + Math.sin(angle) * OFF,
-                carouselRoot.position.y + 0.003,
-                carouselRoot.position.z + Math.cos(angle) * OFF
-            );
-            groundLabel.rotation.set(-Math.PI / 2, angle, 0);
-        }
-
         // ── Navigation ────────────────────────────────────────────────
-        function updateOverlayLabel() {
-            const item = MENU[currentCenterMenu];
-            if (!item) return;
-            const lang = window.__lang || 'en';
-            const name = (lang === 'ka' && item.name_ka) ? item.name_ka : item.name;
-            document.getElementById('xr-item-label').textContent = `${name} · ${currentCenterMenu + 1} / ${N}`;
-        }
-
         function goNext() {
             if (isAnimating) return;
-            isAnimating = true; groundLabel.visible = false;
+            isAnimating = true;
             const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
             if (hiddenSide === 'farLeft') snapSlot(hIdx, 'farRight');
             menuOf[hIdx] = mod(menuOf[rIdx] + 1);
@@ -618,15 +549,13 @@
             setTimeout(() => {
                 slotOf = { left: cIdx, center: rIdx, right: hIdx, hidden: lIdx };
                 hiddenSide = 'farLeft'; currentCenterMenu = mod(currentCenterMenu + 1);
-                updateOverlayLabel(); refreshGroundLabel();
-                if (placed) groundLabel.visible = true;
                 isAnimating = false;
             }, DUR + 10);
         }
 
         function goPrev() {
             if (isAnimating) return;
-            isAnimating = true; groundLabel.visible = false;
+            isAnimating = true;
             const { left: lIdx, center: cIdx, right: rIdx, hidden: hIdx } = slotOf;
             if (hiddenSide === 'farRight') snapSlot(hIdx, 'farLeft');
             menuOf[hIdx] = mod(menuOf[lIdx] - 1);
@@ -640,8 +569,6 @@
             setTimeout(() => {
                 slotOf = { left: hIdx, center: lIdx, right: cIdx, hidden: rIdx };
                 hiddenSide = 'farRight'; currentCenterMenu = mod(currentCenterMenu - 1);
-                updateOverlayLabel(); refreshGroundLabel();
-                if (placed) groundLabel.visible = true;
                 isAnimating = false;
             }, DUR + 10);
         }
@@ -655,8 +582,6 @@
             reticle.visible      = false;
             placed               = true;
             gestureLayer.style.display = 'block';
-            refreshGroundLabel();
-            groundLabel.visible = true;
             document.getElementById('xr-place-hint').style.display = 'none';
             document.getElementById('xr-nav-row').style.display    = 'flex';
             document.getElementById('xr-move-hint').style.display  = 'block';
@@ -712,15 +637,6 @@
                 const g = new THREE.Group(); carouselRoot.add(g); return g;
             });
 
-            const geo = new THREE.PlaneGeometry(0.42, 0.10);
-            groundLabelMat = new THREE.MeshBasicMaterial({
-                transparent: true, depthTest: false, side: THREE.DoubleSide
-            });
-            groundLabel = new THREE.Mesh(geo, groundLabelMat);
-            groundLabel.renderOrder = 999;
-            groundLabel.visible = false;
-            scene.add(groundLabel);
-
             gestureLayer = document.getElementById('xr-gesture-layer');
             xrOverlay    = document.getElementById('xr-overlay');
 
@@ -771,7 +687,7 @@
             renderer.xr.addEventListener('sessionend', () => {
                 hitTestSource = null; placed = false;
                 xrSession = null; xrStarting = false;
-                carouselRoot.visible = false; reticle.visible = false; groundLabel.visible = false;
+                carouselRoot.visible = false; reticle.visible = false;
                 xrCanvas.style.display       = 'none';
                 xrOverlay.style.display      = 'none';
                 gestureLayer.style.display   = 'none';
@@ -796,7 +712,6 @@
                         } else { reticle.visible = false; }
                     }
                 }
-                updateGroundLabelTransform();
                 renderer.render(scene, camera);
             });
 
@@ -815,13 +730,11 @@
                 currentCenterMenu = Math.max(0, Math.min(itemIndex, N - 1));
 
                 await _setup();
-                await document.fonts.ready;
 
                 try { await preloadModels(); }
                 catch (e) { console.warn('Model preload partial failure:', e); }
 
                 initSlots();
-                updateOverlayLabel();
 
                 try {
                     xrSession = await navigator.xr.requestSession('immersive-ar', {
@@ -903,7 +816,7 @@
             document.getElementById('xr-place-hint').textContent = u.placeHint;
             document.getElementById('xr-move-hint').textContent  = u.moveHint;
             document.getElementById('xr-exit').textContent       = u.exitAR;
-            const btnText = window.__arCap === 'none' ? u.view3D : u.viewAR;
+            const btnText = (window.__arCap === 'none' && !_isMobile) ? u.view3D : u.viewAR;
             document.querySelectorAll('.ar-btn:not(:disabled)').forEach(b => { b.textContent = btnText; });
             document.querySelectorAll('[data-field][data-idx]').forEach(el => {
                 const item = menuItems[parseInt(el.dataset.idx)];
@@ -943,7 +856,11 @@
             setARButtonsState(false);
             document.getElementById('theme-toggle').style.display = '';
             document.getElementById('lang-toggle').style.display  = '';
-            if (e.detail?.fallbackIdx != null) openModal(e.detail.fallbackIdx, _arCatItems || menuItems);
+            if (e.detail?.fallbackIdx != null) {
+                const item = (_arCatItems || menuItems)[e.detail.fallbackIdx];
+                const gIdx = menuItems.indexOf(item);
+                window.location.href = `advanced-ar.html?item=${gIdx >= 0 ? gIdx : e.detail.fallbackIdx}`;
+            }
         });
 
         // ── Modal ──────────────────────────────────────────────────────
@@ -990,8 +907,13 @@
             modal.classList.remove('active');
             setTimeout(() => {
                 modal.style.display = 'none';
+                // Clear pause flag; re-queue visible thumbnails through the staggered loader.
+                // Off-screen thumbnails reload naturally when scrolled back into view.
                 document.querySelectorAll('.thumb-wrap model-viewer').forEach(mv => {
-                    if (mv.dataset.pausedSrc) { mv.src = mv.dataset.pausedSrc; delete mv.dataset.pausedSrc; }
+                    if (!mv.dataset.pausedSrc) return;
+                    delete mv.dataset.pausedSrc;
+                    const r = mv.getBoundingClientRect();
+                    if (r.bottom > -100 && r.top < window.innerHeight + 100) _scheduleThumb(mv);
                 });
             }, 200);
             document.body.style.overflow = '';
@@ -1016,21 +938,11 @@
             return cap;
         }
 
-        async function activateARDirectly(src) {
-            await customElements.whenDefined('model-viewer');
-            const tmp = document.createElement('model-viewer');
-            tmp.src = src;
-            tmp.setAttribute('ar', '');
-            tmp.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
-            tmp.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;';
-            document.body.appendChild(tmp);
-            tmp.activateAR();
-            setTimeout(() => tmp.remove(), 5000);
-        }
+        const _isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
         function setARButtonsState(loading) {
             const u = UI[window.__lang];
-            const label = loading ? u.loading : (window.__arCap === 'none' ? u.view3D : u.viewAR);
+            const label = loading ? u.loading : ((window.__arCap === 'none' && !_isMobile) ? u.view3D : u.viewAR);
             document.querySelectorAll('.ar-btn').forEach(b => {
                 b.textContent = label;
                 b.disabled    = loading;
@@ -1041,7 +953,7 @@
         let _arOpening  = false;
         let _arCatItems = null;
 
-        async function openAR(localIdx, catItems) {
+        async function openAR(localIdx, catItems, globalIdx) {
             if (_arOpening) return;
             _arOpening  = true;
             _arCatItems = catItems || menuItems;
@@ -1052,17 +964,25 @@
 
             if (!item) { setARButtonsState(false); _arOpening = false; return; }
 
-            if (cap === 'webxr') {
-                if (window.XR) {
+            if (cap === 'webxr' && window.XR) {
+                try {
                     await window.XR.start(localIdx, _arCatItems);
-                } else {
-                    openModal(localIdx, _arCatItems); setARButtonsState(false); _arOpening = false;
+                } catch (err) {
+                    console.error('XR start failed:', err);
+                    setARButtonsState(false);
+                    _arOpening = false;
+                    const gIdx = globalIdx ?? menuItems.indexOf(item);
+                    window.location.href = `advanced-ar.html?item=${gIdx >= 0 ? gIdx : 0}`;
                 }
-            } else if (cap === 'arkit') {
-                activateARDirectly(item.model || 'food.glb');
-                setTimeout(() => { setARButtonsState(false); _arOpening = false; }, 2500);
+            } else if (cap === 'arkit' || _isMobile) {
+                // iOS (Quick Look) or Android without WebXR (Scene Viewer) — delegate to advanced-ar.html
+                const gIdx = globalIdx ?? menuItems.indexOf(item);
+                window.location.href = `advanced-ar.html?item=${gIdx >= 0 ? gIdx : 0}`;
             } else {
-                openModal(localIdx, _arCatItems); setARButtonsState(false); _arOpening = false;
+                // Desktop with no AR — open the 3D modal
+                openModal(localIdx, _arCatItems);
+                setARButtonsState(false);
+                _arOpening = false;
             }
         }
 
@@ -1117,7 +1037,7 @@
             const items = await fetch('./foods/menu.json').then(r => r.json()).catch(() => fallback);
             menuItems = items;
 
-            const initialLabel = window.__arCap === 'none' ? UI[window.__lang].view3D : UI[window.__lang].viewAR;
+            const initialLabel = (window.__arCap === 'none' && !_isMobile) ? UI[window.__lang].view3D : UI[window.__lang].viewAR;
 
             // Group by category, preserving order from JSON
             const categories = [];
@@ -1177,7 +1097,7 @@
                     });
 
                     card.querySelector('.item-details').addEventListener('click', () => openModal(localIdx, catItems));
-                    card.querySelector('.ar-btn').addEventListener('click', e => { e.stopPropagation(); openAR(localIdx, catItems); });
+                    card.querySelector('.ar-btn').addEventListener('click', e => { e.stopPropagation(); openAR(localIdx, catItems, globalIdx); });
 
                     list.appendChild(card);
                 });
@@ -1188,7 +1108,7 @@
             // Correct button labels once AR detection resolves (instant if cap was cached)
             arCapPromise.then(() => {
                 const u = UI[window.__lang];
-                const finalLabel = window.__arCap === 'none' ? u.view3D : u.viewAR;
+                const finalLabel = (window.__arCap === 'none' && !_isMobile) ? u.view3D : u.viewAR;
                 if (finalLabel !== initialLabel)
                     document.querySelectorAll('.ar-btn:not(:disabled)').forEach(b => { b.textContent = finalLabel; });
             });
