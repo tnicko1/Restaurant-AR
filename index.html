@@ -960,7 +960,7 @@
             if (!_arLaunchers[src]) {
                 const mv = document.createElement('model-viewer');
                 mv.setAttribute('ar', '');
-                mv.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
+                mv.setAttribute('ar-modes', 'quick-look');
                 mv.src = src;
                 mv.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;top:-9999px;left:-9999px;';
                 document.body.appendChild(mv);
