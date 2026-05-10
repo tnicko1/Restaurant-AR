@@ -905,7 +905,6 @@
                     if (t) { clearTimeout(t); _thumbUnload.delete(mv); }
                     mv.dataset.pausedSrc = mv.src;
                     mv.removeAttribute('src');
-                    _thumbActive.delete(mv);
                 });
             });
         }
@@ -1010,29 +1009,26 @@
             }
         }
 
-        // ── Thumbnail loader — Set-based, concurrent-capped, delayed unload ──
-        const MAX_ACTIVE_THUMBS = 4;
+        // ── Thumbnail loader — staggered load, delayed unload ──────────────
+        // Stagger prevents simultaneous WebGL context init spikes on page load.
+        // No hard cap — every visible thumbnail loads; unload after 2s off-screen.
         const _thumbPending = new Set();
-        const _thumbActive  = new Set();
         const _thumbUnload  = new WeakMap();
         let   _thumbTimer   = null;
 
         function _drainThumbs() {
             _thumbTimer = null;
-            for (const mv of [..._thumbPending]) {
-                if (_thumbActive.size >= MAX_ACTIVE_THUMBS) break;
-                _thumbPending.delete(mv);
-                if (!mv.isConnected) continue;
-                _thumbActive.add(mv);
-                if (!mv.src) mv.src = mv.dataset.src;
-            }
+            const mv = _thumbPending.values().next().value;
+            if (!mv) return;
+            _thumbPending.delete(mv);
+            if (mv.isConnected && !mv.src) mv.src = mv.dataset.src;
             if (_thumbPending.size > 0) _thumbTimer = setTimeout(_drainThumbs, 150);
         }
 
         function _scheduleThumb(mv) {
             const t = _thumbUnload.get(mv);
             if (t) { clearTimeout(t); _thumbUnload.delete(mv); }
-            if (_thumbPending.has(mv) || _thumbActive.has(mv)) return;
+            if (_thumbPending.has(mv) || mv.src) return;
             _thumbPending.add(mv);
             if (!_thumbTimer) _thumbTimer = setTimeout(_drainThumbs, 0);
         }
@@ -1042,7 +1038,6 @@
             if (!mv.src) return;
             const t = setTimeout(() => {
                 _thumbUnload.delete(mv);
-                _thumbActive.delete(mv);
                 if (!mv.dataset.pausedSrc) mv.removeAttribute('src');
                 if (_thumbPending.size > 0 && !_thumbTimer)
                     _thumbTimer = setTimeout(_drainThumbs, 0);
