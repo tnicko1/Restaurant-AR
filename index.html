@@ -39,6 +39,7 @@
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        button { touch-action: manipulation; }
 
         body {
             background: var(--bg);
@@ -119,6 +120,8 @@
             gap: 12px;
             align-items: center;
             transition: background var(--t), border-color var(--t);
+            contain: content;
+            touch-action: manipulation;
         }
         .menu-item:active { opacity: 0.75; transition: opacity 0.08s; }
 
@@ -891,20 +894,27 @@
             modalItems = catItems || menuItems;
             modalIndex = localIdx;
             updateModal();
-            document.querySelectorAll('.thumb-wrap model-viewer').forEach(mv => {
-                if (mv.src) { mv.dataset.pausedSrc = mv.src; mv.removeAttribute('src'); }
-            });
             modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('active'), 10);
+            requestAnimationFrame(() => modal.classList.add('active'));
             document.body.style.overflow = 'hidden';
+            // Defer thumbnail teardown past the modal fade-in frame so it doesn't block animation
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.thumb-wrap model-viewer').forEach(mv => {
+                    if (!mv.src) return;
+                    const t = _thumbUnload.get(mv);
+                    if (t) { clearTimeout(t); _thumbUnload.delete(mv); }
+                    mv.dataset.pausedSrc = mv.src;
+                    mv.removeAttribute('src');
+                    _thumbActive.delete(mv);
+                });
+            });
         }
 
         function closeModal() {
             modal.classList.remove('active');
             setTimeout(() => {
                 modal.style.display = 'none';
-                // Clear pause flag; re-queue visible thumbnails through the staggered loader.
-                // Off-screen thumbnails reload naturally when scrolled back into view.
+                modalViewer.removeAttribute('src');
                 document.querySelectorAll('.thumb-wrap model-viewer').forEach(mv => {
                     if (!mv.dataset.pausedSrc) return;
                     delete mv.dataset.pausedSrc;
@@ -1000,38 +1010,54 @@
             }
         }
 
-        // ── Build menu ─────────────────────────────────────────────────
-        // Staggered thumbnail loader — first item loads immediately, then one every
-        // 150ms to avoid competing WebGL context inits on page load.
-        const _thumbQueue = [];
-        let _thumbTimer = null;
+        // ── Thumbnail loader — Set-based, concurrent-capped, delayed unload ──
+        const MAX_ACTIVE_THUMBS = 4;
+        const _thumbPending = new Set();
+        const _thumbActive  = new Set();
+        const _thumbUnload  = new WeakMap();
+        let   _thumbTimer   = null;
 
         function _drainThumbs() {
             _thumbTimer = null;
-            if (_thumbQueue.length === 0) return;
-            const mv = _thumbQueue.shift();
-            if (mv.isConnected && !mv.src) mv.src = mv.dataset.src;
-            if (_thumbQueue.length > 0) _thumbTimer = setTimeout(_drainThumbs, 150);
+            for (const mv of [..._thumbPending]) {
+                if (_thumbActive.size >= MAX_ACTIVE_THUMBS) break;
+                _thumbPending.delete(mv);
+                if (!mv.isConnected) continue;
+                _thumbActive.add(mv);
+                if (!mv.src) mv.src = mv.dataset.src;
+            }
+            if (_thumbPending.size > 0) _thumbTimer = setTimeout(_drainThumbs, 150);
         }
 
         function _scheduleThumb(mv) {
-            if (_thumbQueue.includes(mv)) return;
-            _thumbQueue.push(mv);
+            const t = _thumbUnload.get(mv);
+            if (t) { clearTimeout(t); _thumbUnload.delete(mv); }
+            if (_thumbPending.has(mv) || _thumbActive.has(mv)) return;
+            _thumbPending.add(mv);
             if (!_thumbTimer) _thumbTimer = setTimeout(_drainThumbs, 0);
+        }
+
+        function _unscheduleThumb(mv) {
+            _thumbPending.delete(mv);
+            if (!mv.src) return;
+            const t = setTimeout(() => {
+                _thumbUnload.delete(mv);
+                _thumbActive.delete(mv);
+                if (!mv.dataset.pausedSrc) mv.removeAttribute('src');
+                if (_thumbPending.size > 0 && !_thumbTimer)
+                    _thumbTimer = setTimeout(_drainThumbs, 0);
+            }, 2000);
+            _thumbUnload.set(mv, t);
         }
 
         const thumbObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
-                const mv = entry.target;
-                if (entry.isIntersecting) {
-                    _scheduleThumb(mv);
-                } else {
-                    const qi = _thumbQueue.indexOf(mv);
-                    if (qi !== -1) _thumbQueue.splice(qi, 1);
-                    if (!mv.dataset.pausedSrc) mv.removeAttribute('src');
-                }
+                if (entry.isIntersecting) _scheduleThumb(entry.target);
+                else                       _unscheduleThumb(entry.target);
             });
-        }, { rootMargin: '100px' });
+        }, { rootMargin: '200px' });
+
+        // ── Build menu ─────────────────────────────────────────────────
 
         async function buildMenu() {
             const fallback = [
@@ -1085,10 +1111,8 @@
                         <div class="thumb-wrap">
                             <model-viewer
                                 data-src="${item.model || 'food.glb'}"
-                                camera-controls
-                                shadow-intensity="0.5"
-                                min-camera-orbit="auto 0deg auto"
-                                max-camera-orbit="auto 90deg auto">
+                                shadow-intensity="0"
+                                interaction-prompt="none">
                             </model-viewer>
                         </div>
                         <div class="item-details">
