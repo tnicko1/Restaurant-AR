@@ -816,7 +816,7 @@
             document.getElementById('xr-place-hint').textContent = u.placeHint;
             document.getElementById('xr-move-hint').textContent  = u.moveHint;
             document.getElementById('xr-exit').textContent       = u.exitAR;
-            const btnText = (window.__arCap === 'none' && !_isMobile) ? u.view3D : u.viewAR;
+            const btnText = window.__arCap === 'none' ? u.view3D : u.viewAR;
             document.querySelectorAll('.ar-btn:not(:disabled)').forEach(b => { b.textContent = btnText; });
             document.querySelectorAll('[data-field][data-idx]').forEach(el => {
                 const item = menuItems[parseInt(el.dataset.idx)];
@@ -856,11 +856,7 @@
             setARButtonsState(false);
             document.getElementById('theme-toggle').style.display = '';
             document.getElementById('lang-toggle').style.display  = '';
-            if (e.detail?.fallbackIdx != null) {
-                const item = (_arCatItems || menuItems)[e.detail.fallbackIdx];
-                const gIdx = menuItems.indexOf(item);
-                window.location.href = `advanced-ar.html?item=${gIdx >= 0 ? gIdx : e.detail.fallbackIdx}`;
-            }
+            if (e.detail?.fallbackIdx != null) openModal(e.detail.fallbackIdx, _arCatItems || menuItems);
         });
 
         // ── Modal ──────────────────────────────────────────────────────
@@ -938,22 +934,41 @@
             return cap;
         }
 
-        const _isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
         function setARButtonsState(loading) {
             const u = UI[window.__lang];
-            const label = loading ? u.loading : ((window.__arCap === 'none' && !_isMobile) ? u.view3D : u.viewAR);
+            const label = loading ? u.loading : (window.__arCap === 'none' ? u.view3D : u.viewAR);
             document.querySelectorAll('.ar-btn').forEach(b => {
                 b.textContent = label;
                 b.disabled    = loading;
             });
         }
 
+        // ── iOS AR launcher — hidden model-viewers pre-load so activateAR()
+        //    can fire synchronously from the tap without losing the gesture context.
+        const _arLaunchers = {};
+        function _getARLauncher(src) {
+            if (!_arLaunchers[src]) {
+                const mv = document.createElement('model-viewer');
+                mv.setAttribute('ar', '');
+                mv.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
+                mv.src = src;
+                mv.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;top:-9999px;left:-9999px;';
+                document.body.appendChild(mv);
+                _arLaunchers[src] = mv;
+            }
+            return _arLaunchers[src];
+        }
+
+        // Pre-load both models on iOS so USDZ is ready before the user taps
+        const _isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (_isIOS) ['food.glb', 'Druidi.glb'].forEach(src => _getARLauncher(src));
+
         // ── AR routing ─────────────────────────────────────────────────
         let _arOpening  = false;
         let _arCatItems = null;
 
-        async function openAR(localIdx, catItems, globalIdx) {
+        async function openAR(localIdx, catItems) {
             if (_arOpening) return;
             _arOpening  = true;
             _arCatItems = catItems || menuItems;
@@ -969,17 +984,16 @@
                     await window.XR.start(localIdx, _arCatItems);
                 } catch (err) {
                     console.error('XR start failed:', err);
+                    openModal(localIdx, _arCatItems);
                     setARButtonsState(false);
                     _arOpening = false;
-                    const gIdx = globalIdx ?? menuItems.indexOf(item);
-                    window.location.href = `advanced-ar.html?item=${gIdx >= 0 ? gIdx : 0}`;
                 }
-            } else if (cap === 'arkit' || _isMobile) {
-                // iOS (Quick Look) or Android without WebXR (Scene Viewer) — delegate to advanced-ar.html
-                const gIdx = globalIdx ?? menuItems.indexOf(item);
-                window.location.href = `advanced-ar.html?item=${gIdx >= 0 ? gIdx : 0}`;
+            } else if (cap === 'arkit') {
+                // iOS — fire Quick Look directly via pre-loaded hidden model-viewer
+                _getARLauncher(item.model || 'food.glb').activateAR();
+                setTimeout(() => { setARButtonsState(false); _arOpening = false; }, 2500);
             } else {
-                // Desktop with no AR — open the 3D modal
+                // No AR support (non-ARCore Android, desktop) — open 3D modal
                 openModal(localIdx, _arCatItems);
                 setARButtonsState(false);
                 _arOpening = false;
@@ -1037,7 +1051,7 @@
             const items = await fetch('./foods/menu.json').then(r => r.json()).catch(() => fallback);
             menuItems = items;
 
-            const initialLabel = (window.__arCap === 'none' && !_isMobile) ? UI[window.__lang].view3D : UI[window.__lang].viewAR;
+            const initialLabel = window.__arCap === 'none' ? UI[window.__lang].view3D : UI[window.__lang].viewAR;
 
             // Group by category, preserving order from JSON
             const categories = [];
@@ -1097,7 +1111,7 @@
                     });
 
                     card.querySelector('.item-details').addEventListener('click', () => openModal(localIdx, catItems));
-                    card.querySelector('.ar-btn').addEventListener('click', e => { e.stopPropagation(); openAR(localIdx, catItems, globalIdx); });
+                    card.querySelector('.ar-btn').addEventListener('click', e => { e.stopPropagation(); openAR(localIdx, catItems); });
 
                     list.appendChild(card);
                 });
@@ -1108,7 +1122,7 @@
             // Correct button labels once AR detection resolves (instant if cap was cached)
             arCapPromise.then(() => {
                 const u = UI[window.__lang];
-                const finalLabel = (window.__arCap === 'none' && !_isMobile) ? u.view3D : u.viewAR;
+                const finalLabel = window.__arCap === 'none' ? u.view3D : u.viewAR;
                 if (finalLabel !== initialLabel)
                     document.querySelectorAll('.ar-btn:not(:disabled)').forEach(b => { b.textContent = finalLabel; });
             });
